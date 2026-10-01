@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="gl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Calcetín · panel</title>
+<style>
+:root{--bg:#120f38;--panel:#1d1852;--line:rgba(255,255,255,.12);--ink:#f3f1ff;--muted:#a9a4d6;--acc:#ff9f5a;--glass:rgba(255,255,255,.07)}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+body{padding:calc(16px + env(safe-area-inset-top,0px)) 14px calc(30px + env(safe-area-inset-bottom,0px))}
+main{max-width:760px;margin:0 auto}
+h1{font-size:22px;margin:0 0 14px}
+button,input,select{font:inherit;color:inherit}
+.btn{border:0;border-radius:12px;padding:9px 14px;background:var(--glass);cursor:pointer;font-weight:600}
+.btn.p{background:var(--acc);color:#2a1405}
+.btn.s{padding:5px 10px;font-size:13.5px}
+input,select{background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
+.tabs{display:flex;gap:4px;padding:4px;border-radius:14px;background:var(--glass);margin-bottom:14px}
+.tabs button{flex:1;border:0;background:none;padding:9px;border-radius:10px;font-weight:600;color:var(--muted);cursor:pointer}
+.tabs button.on{background:var(--acc);color:#2a1405}
+table{width:100%;border-collapse:collapse}
+td,th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{color:var(--muted);font-weight:600;font-size:13px}
+tr.today td{background:rgba(255,159,90,.12)}
+tr.past td{opacity:.6}
+.tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;background:var(--acc);color:#2a1405;font-weight:700}
+.muted{color:var(--muted);font-size:13px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.astros label{display:flex;gap:8px;align-items:center;padding:6px 4px;border-bottom:1px solid var(--line)}
+.astros label.off{opacity:.5}
+#msg{min-height:20px;color:var(--acc)}
+.wrap{overflow-x:auto}
+</style>
+</head>
+<body>
+<main>
+  <h1>🧦 Calcetín · panel</h1>
+
+  <section id="login" class="card">
+    <form id="loginForm" class="row">
+      <input id="pass" type="password" placeholder="Contrasinal" autocomplete="current-password" style="flex:1;min-width:180px">
+      <button class="btn p" type="submit">Entrar</button>
+    </form>
+    <p id="msg"></p>
+  </section>
+
+  <section id="panel" hidden>
+    <div class="tabs"><button data-t="orde" class="on">Orde</button><button data-t="astros">Astros</button><button data-t="xente">Xogadores</button></div>
+    <div id="view"></div>
+    <p class="row"><a class="btn" href="./">← Volver ao xogo</a><button class="btn" id="logout">Saír</button></p>
+  </section>
+</main>
+
+<script src="data.js"></script>
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const NAMES = {}, CONOF = {};
+STARS_RAW.forEach(r => { NAMES[r[0]] = (STAR_NAMES[r[0]] && STAR_NAMES[r[0]].gl) || r[0]; CONOF[r[0]] = r[1]; });
+DSO_RAW.forEach(r => { NAMES[r[0]] = r[8].gl; CONOF[r[0]] = r[1]; });
+const conName = c => CONS[c] ? CONS[c][1] : c;
+const ALL = Object.keys(NAMES).sort((a, b) => NAMES[a].localeCompare(NAMES[b], "gl"));
+const DIAS = ["dom","lun","mar","mér","xov","ven","sáb"], MESES = ["xan","feb","mar","abr","mai","xuñ","xul","ago","set","out","nov","dec"];
+const dateOf = n => { const d = new Date(2026, 9, 1 + n - 1); return `${DIAS[d.getDay()]} ${d.getDate()} ${MESES[d.getMonth()]}`; };
+
+let KEY = sessionStorage.getItem("cal_admin") || "", tab = "orde";
+async function call(action, extra){
+  const r = await fetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(Object.assign({ key: KEY, action }, extra || {})) });
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 401){ logout(); throw new Error("Contrasinal incorrecto"); }
+  if (!r.ok) throw new Error(j.error || "Erro do servidor");
+  return j;
+}
+function logout(){ KEY = ""; sessionStorage.removeItem("cal_admin"); $("#panel").hidden = true; $("#login").hidden = false; }
+$("#logout").onclick = logout;
+$("#loginForm").onsubmit = async e => {
+  e.preventDefault(); KEY = $("#pass").value; $("#msg").textContent = "";
+  try { await call("ping"); sessionStorage.setItem("cal_admin", KEY); start(); }
+  catch(err){ $("#msg").textContent = err.message; }
+};
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => { tab = b.dataset.t; document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x === b)); render(); });
+function start(){ $("#login").hidden = true; $("#panel").hidden = false; render(); }
+async function render(){
+  const v = $("#view"); v.innerHTML = `<p class="muted">Cargando…</p>`;
+  try { if (tab === "orde") await renderOrde(v); else if (tab === "astros") await renderAstros(v); else await renderXente(v); }
+  catch(err){ v.innerHTML = `<p id="msg">${esc(err.message)}</p>`; }
+}
+
+/* ---------- Orde dos días ---------- */
+async function renderOrde(v){
+  const j = await call("orde", { days: 45 });
+  const opts = ALL.map(id => `<option value="${esc(id)}">${esc(NAMES[id])} · ${esc(conName(CONOF[id]))}</option>`).join("");
+  v.innerHTML = `<div class="card"><p class="muted">Hoxe é o reto nº ${j.today}. Os días pasados e o de hoxe non se poden cambiar. Nos futuros podes fixar un astro; o resto escóllese só.</p>
+    <div class="wrap"><table><tr><th>Nº</th><th>Día</th><th>Astro</th><th></th></tr>
+    ${j.list.map(d => `<tr class="${d.today ? "today" : d.past ? "past" : ""}"><td>${d.n}</td><td>${esc(dateOf(d.n))}</td>
+      <td>${esc(NAMES[d.astro] || d.astro)} <span class="muted">${esc(conName(CONOF[d.astro]))}</span> ${d.manual ? `<span class="tag">fixado</span>` : ""}</td>
+      <td>${d.past || d.today ? (d.today ? `<span class="tag">hoxe</span>` : "") : `<div class="row"><button class="btn s" data-fix="${d.n}">Cambiar</button>${d.manual ? `<button class="btn s" data-free="${d.n}">Soltar</button>` : ""}</div>`}</td></tr>`).join("")}
+    </table></div></div>`;
+  v.querySelectorAll("[data-fix]").forEach(b => b.onclick = () => {
+    const td = b.closest("td"); td.innerHTML = `<div class="row"><select style="max-width:220px">${opts}</select><button class="btn s p">Gardar</button></div>`;
+    td.querySelector("button").onclick = async () => { await call("fixar", { n: +b.dataset.fix, astro: td.querySelector("select").value }); render(); };
+  });
+  v.querySelectorAll("[data-free]").forEach(b => b.onclick = async () => { await call("soltar", { n: +b.dataset.free }); render(); });
+}
+
+/* ---------- Astros que poden saír ---------- */
+async function renderAstros(v){
+  const j = await call("orde", { days: 7 }); const off = new Set(j.off);
+  v.innerHTML = `<div class="card"><p class="muted">Desmarca un astro para que non saia como reto nos días que aínda non están escollidos. Seguirá vendo no ceo.</p>
+    <p class="row"><input id="q" placeholder="Buscar…" style="flex:1"><span class="muted">${ALL.length - off.size} de ${ALL.length} activos</span></p>
+    <div class="astros">${ALL.map(id => `<label class="${off.has(id) ? "off" : ""}" data-n="${esc((NAMES[id] + " " + conName(CONOF[id]) + " " + id).toLowerCase())}">
+      <input type="checkbox" data-id="${esc(id)}" ${off.has(id) ? "" : "checked"}> ${esc(NAMES[id])} <span class="muted">${esc(conName(CONOF[id]))}</span></label>`).join("")}</div></div>`;
+  $("#q").oninput = e => { const s = e.target.value.toLowerCase(); v.querySelectorAll(".astros label").forEach(l => l.hidden = s && !l.dataset.n.includes(s)); };
+  v.querySelectorAll("[data-id]").forEach(c => c.onchange = async () => { await call("off", { astro: c.dataset.id, off: !c.checked }); c.closest("label").classList.toggle("off", !c.checked); });
+}
+
+/* ---------- Xogadores e moderación ---------- */
+async function renderXente(v){
+  const j = await call("xogadores");
+  const named = j.players.filter(p => p.name);
+  v.innerHTML = `<div class="card"><h3 style="margin-top:0">Últimos días</h3><div class="wrap"><table><tr><th>Nº</th><th>Xogadores</th><th>Atopados</th><th>Intentos (media)</th></tr>
+    ${j.days.map(d => `<tr><td>${d.n}</td><td>${d.xogadores}</td><td>${d.atopados} (${Math.round(100*d.atopados/Math.max(1, d.xogadores))}%)</td><td>${String(d.intentos).replace(".", ",")}</td></tr>`).join("") || `<tr><td colspan="4" class="muted">Aínda sen partidas</td></tr>`}</table></div></div>
+    <div class="card"><h3 style="margin-top:0">Nomes na clasificación</h3><p class="muted">${j.players.length} navegadores en total; ${named.length} con nome.</p>
+    <div class="wrap"><table><tr><th>Nome</th><th>Partidas</th><th>Puntos</th><th></th></tr>
+    ${named.map(p => `<tr><td>${esc(p.name)} ${p.hidden ? `<span class="tag">agochado</span>` : ""}</td><td>${p.partidas}</td><td>${p.puntos}</td>
+      <td><div class="row"><button class="btn s" data-hide="${esc(p.uid)}" data-h="${p.hidden ? 0 : 1}">${p.hidden ? "Mostrar" : "Agochar"}</button><button class="btn s" data-del="${esc(p.uid)}">Borrar nome</button></div></td></tr>`).join("") || `<tr><td colspan="4" class="muted">Ninguén puxo nome aínda</td></tr>`}
+    </table></div></div>`;
+  v.querySelectorAll("[data-hide]").forEach(b => b.onclick = async () => { await call("agochar", { uid: b.dataset.hide, hidden: b.dataset.h === "1" }); render(); });
+  v.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => { if (confirm("Borrar este nome da clasificación?")){ await call("borrarnome", { uid: b.dataset.del }); render(); } });
+}
+
+if (KEY) call("ping").then(start).catch(() => {});
+</script>
+</body>
+</html>

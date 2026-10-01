@@ -1,0 +1,9 @@
+{
+  "name": "calcetin",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Calcetín: reto diario para atopar un calcetín perdido entre as estrelas",
+  "dependencies": {
+    "pg": "^8.13.0"
+  }
+}
