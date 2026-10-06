@@ -1,6 +1,6 @@
 window.CALCETIN_START = function(SRV){
 "use strict";
-const CONFIG = { HINT: "radar", MAX_TRIES: 8, WIN_DEG: 0.6, SUSPENSE_MS: 550, EPOCH: new Date(2026, 9, 10) }; // reto nº 1 = 10/10/2026 (estrea)
+const CONFIG = { HINT: "radar", MAX_TRIES: 10, WIN_DEG: 0.6, SUSPENSE_MS: 550, EPOCH: new Date(2026, 9, 10) }; // reto nº 1 = 10/10/2026 (estrea)
 
 /* ================= IDIOMAS ================= */
 const LANGS = ["gl","es","ca","eu"], LI = { es:0, gl:1, ca:2, eu:3 };
@@ -218,9 +218,7 @@ const store = {
 let prefs = store.get("calcetin:v1:prefs", { sound: true, labels: true });
 function detectLang(){
   if (prefs.lang && LANGS.includes(prefs.lang)) return prefs.lang;
-  const list = (navigator.languages && navigator.languages.length) ? navigator.languages : [navigator.language || "es"];
-  for (const l of list){ const p = String(l).toLowerCase().split("-")[0]; if (LANGS.includes(p)) return p; if (p === "va") return "ca"; }
-  return "es";
+  return "gl"; // galego por defecto; o idioma cámbiase coa bandeira
 }
 let LANG = detectLang();
 const T = () => I18N[LANG];
@@ -340,9 +338,17 @@ let W = 0, H = 0, DPR = 1, BASE = 300, K = 1;
 let view = [((ORDER.indexOf(TARGET.id) * 97 + 140) % 360), 15]; // centro inicial afastado do obxectivo
 const proj = d3.geoOrthographic().reflectX(true).clipAngle(90).precision(0.5);
 const path = d3.geoPath(proj, ctx);
+// capa de efectos (radar): anímase sen redebuxar todo o ceo
+const fx = $("#fx"), fctx = fx.getContext("2d"), fpath = d3.geoPath(proj, fctx); let fxAnim = 0;
+function renderFx(){
+  fctx.setTransform(1,0,0,1,0,0); fctx.clearRect(0, 0, fx.width, fx.height); fctx.setTransform(DPR,0,0,DPR,0,0);
+  const more = CONFIG.HINT === "radar" ? drawRadar(fctx, fpath) : false;
+  if (more && !fxAnim) fxAnim = requestAnimationFrame(() => { fxAnim = 0; renderFx(); });
+}
 function resize(){
   DPR = Math.min(2.5, window.devicePixelRatio || 1); W = innerWidth; H = innerHeight;
   cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR); cv.style.width = W+"px"; cv.style.height = H+"px";
+  fx.width = cv.width; fx.height = cv.height; fx.style.width = W+"px"; fx.style.height = H+"px";
   BASE = 0.62 * Math.max(W, H); draw();
 }
 function centerY(){ return (state.status !== "playing" && !$("#sheet").classList.contains("collapsed")) ? Math.max(120, H*0.26) : H/2 - 20; }
@@ -363,7 +369,7 @@ function draw(){
   // estrelas de fondo
   for (const b of BG){ if (!visible(b[0], b[1])) continue; const p = proj([b[0], b[1]]); const s = Math.max(.35, (6.8 - b[2]) * .28) * Math.min(1.6, Math.pow(K,.25));
     ctx.fillStyle = `rgba(230,230,255,${Math.max(.15, (6.8-b[2])/4)})`; ctx.fillRect(p[0]-s/2, p[1]-s/2, s, s); }
-  drawBeams(); if (CONFIG.HINT === "ns") drawNS(); if (CONFIG.HINT === "radar") drawRadar();
+  drawBeams(); if (CONFIG.HINT === "ns") drawNS();
   // liñas
   ctx.lineWidth = 1.1; ctx.strokeStyle = "rgba(160,170,255,.28)";
   ctx.beginPath(); LINE_GEO.forEach(l => path({ type:"LineString", coordinates:l.coords })); ctx.stroke();
@@ -394,7 +400,7 @@ function draw(){
   if (selected && visible(selected.lon, selected.lat)){ const p = proj([selected.lon, selected.lat]); ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.setLineDash([5,4]); ctx.beginPath(); ctx.arc(p[0],p[1], 15, 0, 2*Math.PI); ctx.stroke(); ctx.setLineDash([]);
     ctx.fillStyle = "#fff"; ctx.font = `700 13px "Bricolage Grotesque", system-ui, sans-serif`; ctx.textAlign = "left"; ctx.fillText(objName(selected), p[0] + 18, p[1] + 4); }
   if (pending){ const p = proj(pending); ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.lineWidth = 2; ctx.setLineDash([4,4]); ctx.beginPath(); ctx.arc(p[0],p[1], 14 + 4*Math.sin(Date.now()/120), 0, 2*Math.PI); ctx.stroke(); ctx.setLineDash([]); }
-  placeSockOverlay(); drawMini();
+  placeSockOverlay(); drawMini(); renderFx();
 }
 function drawDSO(o, p){
   const k = Math.min(2.2, Math.pow(K,.4)), a = "rgba(210,200,255,";
@@ -465,23 +471,61 @@ function arcCoords(c, rDeg, a0, a1, step){
   for (let k = 0; k <= n; k++) out.push(dest(c, a0 + (a1 - a0)*k/n, rDeg));
   return out;
 }
-function drawRadar(){
-  if (state.status !== "playing" || !state.guesses.length) return;
+const RADAR_MS = 2600;
+const easeOut = x => 1 - Math.pow(1 - x, 3);
+const easeSoft = x => 1 - Math.pow(1 - x, 2);           // freado máis suave
+const smooth = (a, b, x) => { const u = Math.max(0, Math.min(1, (x - a)/(b - a))); return u*u*(3 - 2*u); };
+// tres estilos para probar: "pulsos" (ondas que pasan e desaparecen), "halo" (banda difusa e tenue), "apagase" (aneis que se van apagando)
+let RADAR_STYLE = ["pulsos","halo","apagase"].includes(prefs.radarStyle) ? prefs.radarStyle : "pulsos";
+function drawRadar(X, P){ // debúxase na capa #fx; devolve true mentres siga a animación
+  if (state.status !== "playing" || !state.guesses.length) return false;
+  const now = performance.now();
+  if (now < radarT) return isFinite(radarT);
   const i = state.guesses.length - 1, g = state.guesses[i], R = radarFor(g, i), c = [g.lon, g.lat], ink = "#fff4c8";
-  const p = Math.min(1, (performance.now() - radarT)/1700), rMax = Math.max(0.8, Math.min(g.d, 178));
-  const shown = p >= 1 ? R.n : Math.max(1, Math.ceil(p*R.n));
-  for (let k = 1; k <= shown; k++){
-    const rr = rMax*k/R.n, outer = k === R.n;
-    ctx.lineWidth = outer ? 2.6 : 1.3; ctx.strokeStyle = hexA(ink, outer ? .9 : .18 + .4*k/R.n);
-    ctx.beginPath(); path({ type:"LineString", coordinates: arcCoords(c, rr, R.gap1, R.gap0 + 360, 3) }); ctx.stroke();
-    ctx.save(); ctx.setLineDash([2,7]); ctx.lineWidth = .8; ctx.strokeStyle = hexA(ink, .16);
-    ctx.beginPath(); path({ type:"LineString", coordinates: arcCoords(c, rr, R.gap0, R.gap1, 3) }); ctx.stroke(); ctx.restore();
+  const rMax = Math.max(0.8, Math.min(g.d, 178)), el = now - radarT, rnd = mulberry(RETO*613 + i*7 + 1);
+  const arc = (r, a0, a1) => { X.beginPath(); P({ type:"LineString", coordinates: arcCoords(c, Math.max(0.3, Math.min(178, r)), a0, a1, 1.5) }); };
+  X.lineCap = "round"; X.lineJoin = "round";
+  const ring = (r, w, a) => { if (a <= 0.004) return; X.lineWidth = w; X.strokeStyle = hexA(ink, a); arc(r, R.gap1, R.gap0 + 360); X.stroke();
+    X.save(); X.setLineDash([2,7]); X.lineWidth = .8; X.strokeStyle = hexA(ink, a*.2); arc(r, R.gap0, R.gap1); X.stroke(); X.restore(); };
+
+  if (RADAR_STYLE === "pulsos"){
+    // tres ondas seguidas; cada unha morre nun punto distinto arredor da distancia real (±15 %) e apágase
+    const PUL = 3, GAPMS = 1300, LIFE = 3600; let more = false;
+    for (let k = 0; k < PUL; k++){
+      const end = rMax*(1 + (rnd()*2 - 1)*0.15), q = (el - k*GAPMS)/LIFE;
+      if (q < 0){ more = true; continue; } if (q >= 1) continue;
+      more = true;
+      // entra suave, avanza freando e apágase devagar
+      ring(easeSoft(q)*end, 2.2, .7*smooth(0, .12, q)*Math.pow(1 - q, 1.8));
+    }
+    // última onda: chega, queda quieta un pouco e apágase moi amodo
+    const LAST = 7600, ql = (el - PUL*GAPMS)/LAST;
+    if (ql < 1){ more = true;
+      if (ql >= 0){ const endL = rMax*(1 + (rnd()*2 - 1)*0.12), tr = .42;
+        const r = easeSoft(Math.min(1, ql/tr))*endL, a = .72*smooth(0, .05, ql)*(1 - smooth(.6, 1, ql));
+        ring(r, 2.4, a); } }
+    return more;
   }
-  if (p >= 1){ // eco que se apaga a ±15 %
-    [0.96, 1.04, 0.92, 1.08, 0.88, 1.12].forEach(f => { ctx.lineWidth = 4; ctx.strokeStyle = hexA(ink, .13*(1 - Math.abs(1 - f)/0.15));
-      ctx.beginPath(); path({ type:"LineString", coordinates: arcCoords(c, Math.min(178, rMax*f), R.gap1, R.gap0 + 360, 3) }); ctx.stroke(); });
-  } else redraw();
+  if (R && RADAR_STYLE === "halo"){
+    // banda ancha e difusa; o máis brillante non cae xusto na distancia real
+    const grow = smooth(0, 1, el/2200), centre = rMax*(1 + (rnd()*2 - 1)*0.12), width = 0.28;
+    for (let f = -1; f <= 1.0001; f += 0.125){
+      const a = grow*.07*Math.exp(-f*f*2.2);
+      ring(centre*(1 + f*width)*(0.6 + 0.4*grow), 7, a);
+    }
+    return grow < 1;
+  }
+  // "apagase": os aneis aparecen coa onda e despois apáganse aos poucos (7 s), sen eco fixo
+  const p = Math.min(1, el/RADAR_MS), front = easeSoft(p)*rMax, step = rMax/R.n, fade = Math.max(0, 1 - Math.max(0, el - RADAR_MS)/7000);
+  for (let k = 1; k <= R.n; k++){
+    const rr = step*k, a = Math.max(0, Math.min(1, (front - rr + step*0.6)/(step*0.6)));
+    if (a <= 0) break; ring(rr, 1.3, fade*a*(.18 + .4*k/R.n));
+  }
+  if (p < 1) ring(front, 2.6, .7*smooth(0, .1, p)*(1 - p*.6));
+  return fade > 0;
 }
+function replayRadar(delay){ radarT = performance.now() + (delay || 0); renderFx(); }
+
 function nsOf(g){ const d = TARGET.lat - g.lat; return Math.abs(d) < 2 ? "eq" : d > 0 ? "n" : "s"; }
 function drawNS(){ // paralelo polo último intento e unha frecha cara ao norte ou ao sur
   if (state.status !== "playing" || !state.guesses.length) return;
@@ -560,7 +604,7 @@ function focusLast(ms){ const n = state.guesses.length; if (!n) return; const g 
   if (CONFIG.HINT === "ns"){ flyTo(g.lon, g.lat, K, ms); return; }
   if (CONFIG.HINT === "radar"){ const r = Math.max(3, Math.min(g.d, 85)); flyTo(g.lon, g.lat, Math.max(0.55, Math.min(9, 0.42*Math.min(W, H)/(BASE*Math.sin(r*rad)))), ms); return; }
   const b = beamFor(g, n-1); flyTo(b.aim[0], b.aim[1], fitBeam(b), ms); }
-$("#focusBtn").onclick = () => focusLast(900);
+$("#focusBtn").onclick = () => { focusLast(1200); replayRadar(1250); };
 function coach(i){
   const done = prefs.tut || 0; if (done > i || done >= 3 || state.status !== "playing") return;
   prefs.tut = i; store.set("calcetin:v1:prefs", prefs);
@@ -570,14 +614,14 @@ $("#coachOk").onclick = () => { prefs.tut = (+$("#coach").dataset.i || 0) + 1; s
 async function guess(ll, o){
   locked = true; if (!state.start){ state.start = Date.now(); startTimer(); }
   const wasIn = inConNow();
-  pending = ll; const anim = setInterval(redraw, 60);
-  await sleep(CONFIG.SUSPENSE_MS); clearInterval(anim); pending = null;
+  pending = ll; (function pulse(){ if (!pending) return; redraw(); requestAnimationFrame(pulse); })();
+  await sleep(CONFIG.SUSPENSE_MS); pending = null;
   const d = (o && o.id === TARGET.id) ? 0 : angDist(ll, [TARGET.lon, TARGET.lat]);
   const prev = state.guesses.length ? state.guesses[state.guesses.length-1].d : null;
   const g = { lon: +ll[0].toFixed(3), lat: +ll[1].toFixed(3), d: +d.toFixed(2), id: o ? o.id : null };
   state.guesses.push(g);
   const found = d <= CONFIG.WIN_DEG, L = lvl(g);
-  radarT = performance.now();
+  radarT = Infinity; // non se debuxa ata que remate o voo da cámara
   ping(L); setReadout(g); setDelta(prev, d);
   const con = guessCon(g);
   if (!found && con === TARGET.con){ hitConLines = TARGET.con; if (!wasIn) toast(T().inCon(conName(TARGET.con)), 3200); }
@@ -588,7 +632,7 @@ async function guess(ll, o){
   else if (state.guesses.length >= CONFIG.MAX_TRIES){ state.status = "lost"; state.end = Date.now(); }
   save(); renderPips(); redraw();
   if (state.status !== "playing"){ stopTimer(); countStats(); await sleep(found ? 700 : 1000); reveal(true); }
-  else { await sleep(250); focusLast(1000); }
+  else { await sleep(150); focusLast(1200); radarT = performance.now() + 1250; redraw(); }
   locked = false;
 }
 function setReadout(g){
@@ -642,7 +686,7 @@ function drawMini(){
   // intentos e linterna
   const n = state.guesses.length;
   state.guesses.forEach((g, i) => { const p = miniXY(g.lon, g.lat); c.fillStyle = lvlColor(g); c.beginPath(); c.arc(p[0], p[1], i === n-1 ? 3 : 2.2, 0, 2*Math.PI); c.fill(); });
-  if (CONFIG.HINT === "radar" && state.status === "playing" && n){ const g = state.guesses[n-1], R = radarFor(g, n-1);
+  if (false && CONFIG.HINT === "radar" && state.status === "playing" && n){ const g = state.guesses[n-1], R = radarFor(g, n-1); // no minimapa non se marca o anel (sería demasiado obvio)
     c.strokeStyle = hexA("#fff4c8", .9); c.lineWidth = 1.2; c.beginPath(); let prev = null;
     arcCoords([g.lon, g.lat], Math.max(0.8, Math.min(g.d, 178)), R.gap1, R.gap0 + 360, 4).forEach(q => { const m = miniXY(q[0], q[1]);
       if (!prev || Math.abs(m[0] - prev[0]) > MW_/2) c.moveTo(m[0], m[1]); else c.lineTo(m[0], m[1]); prev = m; });
@@ -666,7 +710,7 @@ function stopTimer(){ clearInterval(timerId); timerId = null; tick(); }
 function bestScore(){ return state.guesses.length ? Math.max(...state.guesses.map(g => tuneScore(g.d))) : 0; }
 function points(){
   if (!state.guesses.length) return 0;
-  if (state.status === "won"){ const spare = CONFIG.MAX_TRIES - state.guesses.length, s = elapsed()/1000; return 600 + 50*spare + Math.round(50*Math.max(0, Math.min(1, (300 - s)/240))); }
+  if (state.status === "won"){ const spare = CONFIG.MAX_TRIES - state.guesses.length, s = elapsed()/1000; return 600 + 40*spare + Math.round(40*Math.max(0, Math.min(1, (300 - s)/240))); }
   return 5 * Math.min(99, Math.round(100 * bestScore()));
 }
 
@@ -830,6 +874,9 @@ $("#testRand").onclick = () => { const n = 1 + Math.floor(Math.random()*(SRV ? M
 $("#resetBtn").onclick = () => { store.del(KEY); location.reload(); };
 $("#testToday").onclick = () => { store.del(TEST_KEY); location.href = location.pathname; };
 $("#trainGo").onclick = () => newTrain();
+document.querySelectorAll("[data-radar]").forEach(b => { b.classList.toggle("primary", b.dataset.radar === RADAR_STYLE);
+  b.onclick = () => { RADAR_STYLE = b.dataset.radar; prefs.radarStyle = RADAR_STYLE; store.set("calcetin:v1:prefs", prefs);
+    document.querySelectorAll("[data-radar]").forEach(x => x.classList.toggle("primary", x === b)); replayRadar(0); }; });
 $("#launchGo").onclick = () => $("#launchDlg").close();
 function closeLang(){ $("#langMenu").hidden = true; }
 $("#langBtn").onclick = e => { e.stopPropagation(); $("#langMenu").hidden = !$("#langMenu").hidden; };

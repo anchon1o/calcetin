@@ -4,7 +4,7 @@ const crypto = require("crypto");
 const { STARS_RAW, DSO_RAW } = require("../data.js");
 
 /* ---------- Configuración do xogo (igual que no navegador) ---------- */
-const MAX_TRIES = 8, WIN_DEG = 0.6;
+const MAX_TRIES = 10, WIN_DEG = 0.6;
 const EPOCH_UTC = Date.UTC(2026, 9, 10); // reto nº 1 = 10/10/2026 (estrea)
 const EPOCH_TAG = "2026-10-10";
 const PINNED = ["Betelgeuse","Polaris","M31","Sirius","Antares","Vega","M45","Proxima Centauri","Deneb","SGRA"];
@@ -162,7 +162,7 @@ function scoreGame(targetId, guesses, secs){
     if (d <= WIN_DEG){ found = true; break; }
   }
   const score = found
-    ? 600 + 50*(MAX_TRIES - tries) + Math.round(50*Math.max(0, Math.min(1, (300 - secs)/240)))
+    ? 600 + 40*(MAX_TRIES - tries) + Math.round(40*Math.max(0, Math.min(1, (300 - secs)/240)))
     : 5 * Math.min(99, Math.round(100 * best));
   return { found, tries, score };
 }
