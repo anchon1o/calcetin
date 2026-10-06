@@ -3,7 +3,7 @@ const L = require("./_lib");
 module.exports = L.handler(async (req, res) => {
   if (req.method !== "POST") return L.send(res, 405, { error: "method" });
   const b = await L.body(req), today = L.todayN(), n = parseInt(b.n, 10);
-  if (!(n >= today - 2 && n <= today)) return L.send(res, 400, { error: "day" });
+  if (!(n >= Math.max(1, today - 2) && n <= today)) return L.send(res, 400, { error: "day" });
   const guesses = Array.isArray(b.guesses) ? b.guesses.slice(0, L.MAX_TRIES).filter(g => g && isFinite(g.lon) && isFinite(g.lat)) : [];
   if (!guesses.length) return L.send(res, 400, { error: "guesses" });
   if (!(await L.player(b.uid, b.key))) return L.send(res, 403, { error: "key" });

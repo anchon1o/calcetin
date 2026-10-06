@@ -35,4 +35,9 @@ As táboas créanse soas na primeira visita, todas co prefixo `cal_` e con RLS a
 
 ## Datos
 
-Os números de reto: o nº 1 é o 1 de outubro de 2026 (o 30 de setembro é o nº 0). O día cambia á medianoite de Madrid.
+Os números de reto: o nº 1 é o 10 de outubro de 2026, día da estrea; antes só se pode adestrar. O día cambia á medianoite de Madrid.
+
+## Imaxe para compartir
+
+`og.jpg` é a imaxe que aparece ao pegar a ligazón en WhatsApp. En `index.html` a súa dirección completa está na liña
+`og:image`: se o teu enderezo de Vercel non é `calcetin.vercel.app`, cámbiao alí.

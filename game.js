@@ -1,6 +1,6 @@
 window.CALCETIN_START = function(SRV){
 "use strict";
-const CONFIG = { MAX_TRIES: 10, WIN_DEG: 0.6, SUSPENSE_MS: 550, EPOCH: new Date(2026, 9, 1) }; // reto nº 1 = 01/10/2026
+const CONFIG = { HINT: "radar", MAX_TRIES: 8, WIN_DEG: 0.6, SUSPENSE_MS: 550, EPOCH: new Date(2026, 9, 10) }; // reto nº 1 = 10/10/2026 (estrea)
 
 /* ================= IDIOMAS ================= */
 const LANGS = ["gl","es","ca","eu"], LI = { es:0, gl:1, ca:2, eu:3 };
@@ -21,7 +21,7 @@ const I18N = {
  es: {
   intro:"Esta noche se ha perdido un calcetín entre las estrellas.", start:"Busca el calcetín", tapSky:"Toca una estrella", first:"Primer intento",
   near:["Al otro lado del cielo","Lejos","Por la zona","Cerca","Muy cerca"], found:"¡Encontrado!", inConT:"¡En su constelación!", nextCon:"Constelación vecina", chip:c=>`Está en ${c}`, go:"Buscar aquí", tried:"Ya la probaste", focus:"Volver a la linterna",
-  muchCloser:"Mucho más cerca ↑", closer:"Más cerca ↑", same:"Casi igual", farther:"Más lejos ↓", muchFarther:"Mucho más lejos ↓",
+  muchCloser:"Mucho más cerca", closer:"Más cerca", same:"Casi igual", farther:"Más lejos", muchFarther:"Mucho más lejos",
   inCon:c=>`¡Estás en ${c}!`, left:n=>`Quedan ${n}`, last:"Último intento", noTries:"Sin intentos", closest:d=>`Lo más cerca: ${d}`,
   won:"¡Calcetín recuperado!", lost:"El calcetín sigue perdido", where:(n,c)=>`Estaba en <strong>${n}</strong>, en ${c}.`,
   pts:"puntos", tries:"intentos", time:"tiempo", best:"lo más cerca",
@@ -29,12 +29,14 @@ const I18N = {
   copied:"Resultado copiado", copyFail:"No se pudo copiar", mapHint:"Arrastra para mover el cielo",
   howTitle:"Cómo se juega",
   help1:m=>`Cada noche se pierde un calcetín distinto en algún astro del cielo. Es el mismo para todos y tienes <b>${m}</b> intentos.`,
-  help2:"Arrastra para mover el cielo y pellizca para acercarte. Toca una estrella y pulsa «Buscar aquí». La linterna te señala hacia dónde está el calcetín: cuanto más cerca estés, más estrecho es el haz.",
-  help3:"Si aciertas la constelación, sus líneas se quedan encendidas y sus astros marcados con un círculo. Para ganar hay que acertar el astro exacto. El mapa pequeño de arriba muestra todo el cielo: tócalo para viajar.",
+  help2:"Arrastra para mover el cielo y pellizca para acercarte. Toca una estrella y pulsa «Buscar aquí». Cada intento lanza un radar: las ondas llegan hasta la distancia del calcetín y el hueco sin ondas marca una zona donde no está.",
+  help3:"Si aciertas la constelación, sus líneas se quedan encendidas. Para ganar hay que acertar el astro exacto. El mapa pequeño de arriba muestra todo el cielo: tócalo para viajar.",
   help4:"Al terminar, toca cualquier astro para ver su ficha. Los calcetines que encuentres se guardan en tu cajón.",
   sound:"Sonido", conNames:"Nombres de las constelaciones",
   testTitle:"Modo pruebas (no cuenta en tus estadísticas)", retoLabel:"Reto nº", play:"Jugar", random:"Al azar", reset:"Reiniciar este reto", today:"Volver al de hoy",
   drawerTitle:"Mi cajón", dFound:"encontrado", dLost:"perdido", dNone:"sin jugar", dCount:(f,t)=>`${f} de ${t} calcetines recuperados`,
+  nsN:"más al norte", nsS:"más al sur", nsEq:"a su misma altura", 
+  train:"entreno", another:"Otro astro", launchTitle:"Estreno el 10 de octubre", launchText:"Cada día se perderá un calcetín nuevo, el mismo para todo el mundo. Hasta entonces puedes entrenar con astros al azar: no cuenta para la clasificación.", launchIn:t=>`Faltan ${t}`, days:n=>n===1?"1 día":`${n} días`, trainBtn:"Entrenar", dEmpty:"Los retos empiezan el 10 de octubre.", coach:["Toca una estrella para seleccionarla y pulsa «Buscar aquí».","El radar llega hasta la distancia del calcetín: está en algún punto del anillo exterior, nunca en el hueco.","Cuando aciertes la constelación, sus líneas se encenderán y el panel te lo dirá. Después busca el astro exacto."], gotIt:"Entendido",
   rankTitle:"Clasificación", rankBtn:"Clasificación", tabs:["Yo","Hoy","Semana","Mes","Siempre"], weekNote:"Suma de tus 5 mejores días de los últimos 7.", monthNote:"Suma de todos los días de este mes.", rankEmpty:"Todavía no hay nadie con nombre. ¡Sé la primera persona!", myPos:(p,t,s)=>`Estás en el puesto ${p} de ${t} con ${s} puntos.`, noScore:"Aún no tienes puntos en este periodo.", nameLabel:"Para salir en la clasificación, elige un nombre. No hace falta registrarse: todo se guarda en este navegador.", namePh:"Tu nombre", save:"Guardar", hideMe:"Dejar de aparecer", nameOk:"Nombre guardado", nameGone:"Ya no apareces en la clasificación", nameBad:"Usa de 2 a 20 letras o números", offline:"No se pudo conectar", sPlayed:"jugados", sFound:"encontrados", sStreak:"racha actual", sBest:"mejor racha", sPts:"puntos", sAvg:"intentos de media", you:"tú", loading:"Cargando…",
   lostIn:n=>`Perdido en ${n}`, foundIn:n=>`Encontrado en ${n}`, num:"nº", test:"prueba", langLabel:"Idioma",
   temp:"Temperatura", dist:"Distancia", size:"Tamaño", bright:"Brillo", con:"Constelación",
@@ -66,7 +68,7 @@ const I18N = {
  gl: {
   intro:"Esta noite perdeuse un calcetín entre as estrelas.", start:"Busca o calcetín", tapSky:"Toca unha estrela", first:"Primeiro intento",
   near:["Ao outro lado do ceo","Lonxe","Pola zona","Preto","Moi preto"], found:"Atopado!", inConT:"Na súa constelación!", nextCon:"Constelación veciña", chip:c=>`Está en ${c}`, go:"Buscar aquí", tried:"Xa a probaches", focus:"Volver á lanterna",
-  muchCloser:"Moito máis preto ↑", closer:"Máis preto ↑", same:"Case igual", farther:"Máis lonxe ↓", muchFarther:"Moito máis lonxe ↓",
+  muchCloser:"Moito máis preto", closer:"Máis preto", same:"Case igual", farther:"Máis lonxe", muchFarther:"Moito máis lonxe",
   inCon:c=>`Estás en ${c}!`, left:n=>`Quedan ${n}`, last:"Último intento", noTries:"Sen intentos", closest:d=>`O máis preto: ${d}`,
   won:"Calcetín recuperado!", lost:"O calcetín segue perdido", where:(n,c)=>`Estaba en <strong>${n}</strong>, en ${c}.`,
   pts:"puntos", tries:"intentos", time:"tempo", best:"o máis preto",
@@ -74,12 +76,14 @@ const I18N = {
   copied:"Resultado copiado", copyFail:"Non se puido copiar", mapHint:"Arrastra para mover o ceo",
   howTitle:"Como se xoga",
   help1:m=>`Cada noite pérdese un calcetín distinto nalgún astro do ceo. É o mesmo para todos e tes <b>${m}</b> intentos.`,
-  help2:"Arrastra para mover o ceo e belisca para achegarte. Toca unha estrela e preme «Buscar aquí». A lanterna sinálache cara a onde está o calcetín: canto máis preto esteas, máis estreito é o feixe.",
-  help3:"Se acertas a constelación, as súas liñas quedan acesas e os seus astros marcados cun círculo. Para gañar hai que acertar o astro exacto. O mapa pequeno de arriba amosa todo o ceo: tócao para viaxar.",
+  help2:"Arrastra para mover o ceo e belisca para achegarte. Toca unha estrela e preme «Buscar aquí». Cada intento lanza un radar: as ondas chegan ata a distancia do calcetín e o oco sen ondas marca unha zona onde non está.",
+  help3:"Se acertas a constelación, as súas liñas quedan acesas. Para gañar hai que acertar o astro exacto. O mapa pequeno de arriba amosa todo o ceo: tócao para viaxar.",
   help4:"Ao rematar, toca calquera astro para ver a súa ficha. Os calcetíns que atopes gárdanse no teu caixón.",
   sound:"Son", conNames:"Nomes das constelacións",
   testTitle:"Modo probas (non conta nas túas estatísticas)", retoLabel:"Reto nº", play:"Xogar", random:"Ao chou", reset:"Reiniciar este reto", today:"Volver ao de hoxe",
   drawerTitle:"O meu caixón", dFound:"atopado", dLost:"perdido", dNone:"sen xogar", dCount:(f,t)=>`${f} de ${t} calcetíns recuperados`,
+  nsN:"máis ao norte", nsS:"máis ao sur", nsEq:"á mesma altura", 
+  train:"adestramento", another:"Outro astro", launchTitle:"Estrea o 10 de outubro", launchText:"Cada día perderase un calcetín novo, o mesmo para todo o mundo. Ata entón podes adestrar con astros ao chou: non conta para a clasificación.", launchIn:t=>`Faltan ${t}`, days:n=>n===1?"1 día":`${n} días`, trainBtn:"Adestrar", dEmpty:"Os retos comezan o 10 de outubro.", coach:["Toca unha estrela para seleccionala e preme «Buscar aquí».","O radar chega ata a distancia do calcetín: está nalgún punto do anel exterior, nunca no oco.","Cando acertes a constelación, as súas liñas acenderanse e o panel avisarate. Despois busca o astro exacto."], gotIt:"Entendido",
   rankTitle:"Clasificación", rankBtn:"Clasificación", tabs:["Eu","Hoxe","Semana","Mes","Sempre"], weekNote:"Suma dos teus 5 mellores días dos últimos 7.", monthNote:"Suma de todos os días deste mes.", rankEmpty:"Aínda non hai ninguén con nome. Sé a primeira persoa!", myPos:(p,t,s)=>`Estás no posto ${p} de ${t} con ${s} puntos.`, noScore:"Aínda non tes puntos neste período.", nameLabel:"Para saír na clasificación, escolle un nome. Non fai falta rexistrarse: todo se garda neste navegador.", namePh:"O teu nome", save:"Gardar", hideMe:"Deixar de aparecer", nameOk:"Nome gardado", nameGone:"Xa non apareces na clasificación", nameBad:"Usa de 2 a 20 letras ou números", offline:"Non se puido conectar", sPlayed:"xogados", sFound:"atopados", sStreak:"racha actual", sBest:"mellor racha", sPts:"puntos", sAvg:"intentos de media", you:"ti", loading:"Cargando…",
   lostIn:n=>`Perdido en ${n}`, foundIn:n=>`Atopado en ${n}`, num:"nº", test:"proba", langLabel:"Lingua",
   temp:"Temperatura", dist:"Distancia", size:"Tamaño", bright:"Brillo", con:"Constelación",
@@ -111,7 +115,7 @@ const I18N = {
  ca: {
   intro:"Aquesta nit s'ha perdut un mitjó entre les estrelles.", start:"Busca el mitjó", tapSky:"Toca una estrella", first:"Primer intent",
   near:["A l'altra banda del cel","Lluny","Per la zona","A prop","Molt a prop"], found:"Trobat!", inConT:"A la seva constel·lació!", nextCon:"Constel·lació veïna", chip:c=>`És a ${c}`, go:"Busca aquí", tried:"Ja l'has provada", focus:"Tornar a la llanterna",
-  muchCloser:"Molt més a prop ↑", closer:"Més a prop ↑", same:"Gairebé igual", farther:"Més lluny ↓", muchFarther:"Molt més lluny ↓",
+  muchCloser:"Molt més a prop", closer:"Més a prop", same:"Gairebé igual", farther:"Més lluny", muchFarther:"Molt més lluny",
   inCon:c=>`Ets a ${c}!`, left:n=>`Queden ${n}`, last:"Últim intent", noTries:"Sense intents", closest:d=>`El més a prop: ${d}`,
   won:"Mitjó recuperat!", lost:"El mitjó continua perdut", where:(n,c)=>`Era a <strong>${n}</strong>, a ${c}.`,
   pts:"punts", tries:"intents", time:"temps", best:"el més a prop",
@@ -119,12 +123,14 @@ const I18N = {
   copied:"Resultat copiat", copyFail:"No s'ha pogut copiar", mapHint:"Arrossega per moure el cel",
   howTitle:"Com es juga",
   help1:m=>`Cada nit es perd un mitjó diferent en algun astre del cel. És el mateix per a tothom i tens <b>${m}</b> intents.`,
-  help2:"Arrossega per moure el cel i pessiga per apropar-t'hi. Toca una estrella i prem «Busca aquí». La llanterna t'indica cap on és el mitjó: com més a prop siguis, més estret és el feix.",
-  help3:"Si encertes la constel·lació, les seves línies queden enceses i els seus astres marcats amb un cercle. Per guanyar cal encertar l'astre exacte. El mapa petit de dalt mostra tot el cel: toca'l per viatjar-hi.",
+  help2:"Arrossega per moure el cel i pessiga per apropar-t'hi. Toca una estrella i prem «Busca aquí». Cada intent llança un radar: les ones arriben fins a la distància del mitjó i el buit sense ones marca una zona on no és.",
+  help3:"Si encertes la constel·lació, les seves línies queden enceses. Per guanyar cal encertar l'astre exacte. El mapa petit de dalt mostra tot el cel: toca'l per viatjar-hi.",
   help4:"En acabar, toca qualsevol astre per veure'n la fitxa. Els mitjons que trobis es guarden al teu calaix.",
   sound:"So", conNames:"Noms de les constel·lacions",
   testTitle:"Mode de proves (no compta a les teves estadístiques)", retoLabel:"Repte núm.", play:"Juga", random:"A l'atzar", reset:"Reinicia aquest repte", today:"Torna al d'avui",
   drawerTitle:"El meu calaix", dFound:"trobat", dLost:"perdut", dNone:"sense jugar", dCount:(f,t)=>`${f} de ${t} mitjons recuperats`,
+  nsN:"més al nord", nsS:"més al sud", nsEq:"a la mateixa altura", 
+  train:"entrenament", another:"Un altre astre", launchTitle:"Estrena el 10 d'octubre", launchText:"Cada dia es perdrà un mitjó nou, el mateix per a tothom. Fins aleshores pots entrenar amb astres a l'atzar: no compta per a la classificació.", launchIn:t=>`Falten ${t}`, days:n=>n===1?"1 dia":`${n} dies`, trainBtn:"Entrena", dEmpty:"Els reptes comencen el 10 d'octubre.", coach:["Toca una estrella per seleccionar-la i prem «Busca aquí».","El radar arriba fins a la distància del mitjó: és en algun punt de l'anell exterior, mai al buit.","Quan encertis la constel·lació, les seves línies s'encendran i el panell t'ho dirà. Després busca l'astre exacte."], gotIt:"D'acord",
   rankTitle:"Classificació", rankBtn:"Classificació", tabs:["Jo","Avui","Setmana","Mes","Sempre"], weekNote:"Suma dels teus 5 millors dies dels últims 7.", monthNote:"Suma de tots els dies d'aquest mes.", rankEmpty:"Encara no hi ha ningú amb nom. Sigues la primera persona!", myPos:(p,t,s)=>`Ets a la posició ${p} de ${t} amb ${s} punts.`, noScore:"Encara no tens punts en aquest període.", nameLabel:"Per sortir a la classificació, tria un nom. No cal registrar-se: tot es desa en aquest navegador.", namePh:"El teu nom", save:"Desa", hideMe:"Deixar de sortir", nameOk:"Nom desat", nameGone:"Ja no surts a la classificació", nameBad:"Fes servir de 2 a 20 lletres o números", offline:"No s'ha pogut connectar", sPlayed:"jugats", sFound:"trobats", sStreak:"ratxa actual", sBest:"millor ratxa", sPts:"punts", sAvg:"intents de mitjana", you:"tu", loading:"Carregant…",
   lostIn:n=>`Perdut a ${n}`, foundIn:n=>`Trobat a ${n}`, num:"núm.", test:"prova", langLabel:"Llengua",
   temp:"Temperatura", dist:"Distància", size:"Mida", bright:"Brillantor", con:"Constel·lació",
@@ -156,7 +162,7 @@ const I18N = {
  eu: {
   intro:"Gaur gauean galtzerdi bat galdu da izarren artean.", start:"Bilatu galtzerdia", tapSky:"Ukitu izar bat", first:"Lehen saiakera",
   near:["Zeruaren beste aldean","Urrun","Inguruan","Gertu","Oso gertu"], found:"Aurkitua!", inConT:"Bere konstelazioan!", nextCon:"Ondoko konstelazioa", chip:c=>`${c} konstelazioan dago`, go:"Bilatu hemen", tried:"Dagoeneko probatu duzu", focus:"Linternara itzuli",
-  muchCloser:"Askoz gertuago ↑", closer:"Gertuago ↑", same:"Ia berdin", farther:"Urrunago ↓", muchFarther:"Askoz urrunago ↓",
+  muchCloser:"Askoz gertuago", closer:"Gertuago", same:"Ia berdin", farther:"Urrunago", muchFarther:"Askoz urrunago",
   inCon:c=>`${c} konstelazioan zaude!`, left:n=>`${n} geratzen dira`, last:"Azken saiakera", noTries:"Saiakerarik gabe", closest:d=>`Gertuena: ${d}`,
   won:"Galtzerdia berreskuratuta!", lost:"Galtzerdiak galduta jarraitzen du", where:(n,c)=>`<strong>${n}</strong> astroan zegoen (${c}).`,
   pts:"puntu", tries:"saiakera", time:"denbora", best:"gertuena",
@@ -164,12 +170,14 @@ const I18N = {
   copied:"Emaitza kopiatuta", copyFail:"Ezin izan da kopiatu", mapHint:"Arrastatu zerua mugitzeko",
   howTitle:"Nola jokatu",
   help1:m=>`Gauero galtzerdi desberdin bat galtzen da zeruko astroren batean. Guztiontzat berdina da, eta <b>${m}</b> saiakera dituzu.`,
-  help2:"Arrastatu zerua mugitzeko eta atximurkatu hurbiltzeko. Ukitu izar bat eta sakatu «Bilatu hemen». Linternak galtzerdia norantz dagoen adierazten dizu: zenbat eta gertuago egon, orduan eta estuagoa da argi-sorta.",
-  help3:"Konstelazioa asmatzen baduzu, bere lerroak piztuta geratzen dira eta bere astroak zirkulu batekin markatuta. Irabazteko astro zehatza asmatu behar da. Goiko mapa txikiak zeru osoa erakusten du: ukitu bidaiatzeko.",
+  help2:"Arrastatu zerua mugitzeko eta atximurkatu hurbiltzeko. Ukitu izar bat eta sakatu «Bilatu hemen». Saiakera bakoitzak radar bat jaurtitzen du: uhinak galtzerdiaren distantziaraino iristen dira, eta uhinik gabeko hutsuneak ez dagoen eremu bat adierazten du.",
+  help3:"Konstelazioa asmatzen baduzu, bere lerroak piztuta geratzen dira. Irabazteko astro zehatza asmatu behar da. Goiko mapa txikiak zeru osoa erakusten du: ukitu bidaiatzeko.",
   help4:"Amaitzean, ukitu edozein astro bere fitxa ikusteko. Aurkitzen dituzun galtzerdiak zure tiraderan gordetzen dira.",
   sound:"Soinua", conNames:"Konstelazioen izenak",
   testTitle:"Proba modua (ez da zure estatistiketan zenbatzen)", retoLabel:"Erronka zk.", play:"Jokatu", random:"Ausaz", reset:"Berrabiarazi erronka hau", today:"Itzuli gaurkora",
   drawerTitle:"Nire tiradera", dFound:"aurkitua", dLost:"galdua", dNone:"jokatu gabe", dCount:(f,t)=>`${t} galtzerditatik ${f} berreskuratuta`,
+  nsN:"iparralderago", nsS:"hegoalderago", nsEq:"altuera berean", 
+  train:"entrenamendua", another:"Beste astro bat", launchTitle:"Estreinaldia: urriaren 10ean", launchText:"Egunero galtzerdi berri bat galduko da, berdina guztientzat. Bitartean, ausazko astroekin entrenatu dezakezu: ez du sailkapenerako balio.", launchIn:t=>`Falta: ${t}`, days:n=>n===1?"egun 1":`${n} egun`, trainBtn:"Entrenatu", dEmpty:"Erronkak urriaren 10ean hasiko dira.", coach:["Ukitu izar bat hautatzeko eta sakatu «Bilatu hemen».","Radarra galtzerdiaren distantziaraino iristen da: kanpoko eraztunaren puntu batean dago, inoiz ez hutsunean.","Konstelazioa asmatzen duzunean, bere lerroak piztuko dira eta panelak esango dizu. Gero bilatu astro zehatza."], gotIt:"Ados",
   rankTitle:"Sailkapena", rankBtn:"Sailkapena", tabs:["Ni","Gaur","Astea","Hilabetea","Beti"], weekNote:"Azken 7 egunetako zure 5 egun onenen batura.", monthNote:"Hilabete honetako egun guztien batura.", rankEmpty:"Oraindik ez dago inor izenarekin. Izan zaitez lehena!", myPos:(p,t,s)=>`${t} jokalaritik ${p}. postuan zaude, ${s} punturekin.`, noScore:"Oraindik ez duzu punturik aldi honetan.", nameLabel:"Sailkapenean agertzeko, aukeratu izen bat. Ez da erregistratu behar: dena nabigatzaile honetan gordetzen da.", namePh:"Zure izena", save:"Gorde", hideMe:"Ez agertu", nameOk:"Izena gordeta", nameGone:"Jada ez zara sailkapenean agertzen", nameBad:"Erabili 2-20 letra edo zenbaki", offline:"Ezin izan da konektatu", sPlayed:"jokatuak", sFound:"aurkituak", sStreak:"uneko bolada", sBest:"bolada onena", sPts:"puntu", sAvg:"saiakera batez beste", you:"zu", loading:"Kargatzen…",
   lostIn:n=>`Galdua: ${n}`, foundIn:n=>`Aurkitua: ${n}`, num:"zk.", test:"proba", langLabel:"Hizkuntza",
   temp:"Tenperatura", dist:"Distantzia", size:"Tamaina", bright:"Distira", con:"Konstelazioa",
@@ -260,17 +268,22 @@ const TODAY = SRV ? SRV.today : todayNum();
 const TEST_KEY = "calcetin:v1:testReto";
 const qs = new URLSearchParams(location.search);
 const TEST_RETO = parseInt(qs.get("reto"),10) || store.get(TEST_KEY, null);
-const RETO = Math.max(0, Math.min(SRV ? TODAY : Infinity, TEST_RETO != null ? TEST_RETO : TODAY));
-const TESTING = RETO !== TODAY;
+const PRELAUNCH = TODAY < 1;
+// adestramento: astros ao chou, sen puntos nin clasificación (forzado antes da estrea)
+const TRAIN = qs.get("entrenar") != null || (PRELAUNCH && (SRV || TEST_RETO == null));
+const TRAIN_SEED_KEY = "calcetin:v1:trainSeed";
+let trainSeed = store.get(TRAIN_SEED_KEY, null); if (TRAIN && !trainSeed){ trainSeed = 100000 + Math.floor(Math.random()*900000); store.set(TRAIN_SEED_KEY, trainSeed); }
+const RETO = TRAIN ? trainSeed : Math.max(1, Math.min(SRV ? TODAY : Infinity, TEST_RETO != null ? TEST_RETO : TODAY));
+const TESTING = TRAIN || RETO !== TODAY;
 // orde dos obxectivos: uns poucos famosos primeiro, logo o resto baralladado
 const ORDER = (function(){ const pinned = ["Betelgeuse","Polaris","M31","Sirius","Antares","Vega","M45","Proxima Centauri","Deneb","SGRA"];
   const rest = OBJECTS.map(o => o.id).filter(id => !pinned.includes(id)); const r = mulberry(2026);
   for (let i = rest.length-1; i > 0; i--){ const j = Math.floor(r()*(i+1)); [rest[i], rest[j]] = [rest[j], rest[i]]; }
   return pinned.concat(rest); })();
 function targetFor(n){ if (SRV && SRV.ids && BYID[SRV.ids[n]]) return BYID[SRV.ids[n]]; const len = ORDER.length; return BYID[ORDER[(((n-1) % len) + len) % len]]; }
-const KEY = `calcetin:v1:reto:${RETO}`;
+const KEY = TRAIN ? `calcetin:v1:train:${RETO}` : `calcetin:v1:reto:${RETO}`;
 let state = store.get(KEY, null) || { guesses: [], start: null, end: null, status: "playing", counted: false };
-const TARGET = targetFor(RETO);
+const TARGET = TRAIN ? OBJECTS[Math.floor(mulberry(RETO)()*OBJECTS.length)] : targetFor(RETO);
 
 /* ================= CALCETÍNS ================= */
 const BASES = ["#7E57C2","#F57C00","#4DB6AC","#C9A227","#E53935","#283593","#EC407A","#43A047","#29B6F6","#8E2442","#00897B","#FF7043"];
@@ -350,7 +363,7 @@ function draw(){
   // estrelas de fondo
   for (const b of BG){ if (!visible(b[0], b[1])) continue; const p = proj([b[0], b[1]]); const s = Math.max(.35, (6.8 - b[2]) * .28) * Math.min(1.6, Math.pow(K,.25));
     ctx.fillStyle = `rgba(230,230,255,${Math.max(.15, (6.8-b[2])/4)})`; ctx.fillRect(p[0]-s/2, p[1]-s/2, s, s); }
-  drawBeams();
+  drawBeams(); if (CONFIG.HINT === "ns") drawNS(); if (CONFIG.HINT === "radar") drawRadar();
   // liñas
   ctx.lineWidth = 1.1; ctx.strokeStyle = "rgba(160,170,255,.28)";
   ctx.beginPath(); LINE_GEO.forEach(l => path({ type:"LineString", coordinates:l.coords })); ctx.stroke();
@@ -376,7 +389,7 @@ function draw(){
   state.guesses.forEach((g, i) => { if (!visible(g.lon, g.lat)) return; const p = proj([g.lon, g.lat]); const c = lvlColor(g);
     ctx.lineWidth = 2.4; ctx.strokeStyle = c; ctx.beginPath(); ctx.arc(p[0], p[1], 12, 0, 2*Math.PI); ctx.stroke();
     ctx.fillStyle = c; ctx.font = `700 11px "Bricolage Grotesque", system-ui, sans-serif`; ctx.textAlign = "center"; ctx.fillText(String(i+1), p[0], p[1] - 16); });
-  if (state.status === "playing" && hitConLines){ ctx.strokeStyle = hexA(CON_COLOR, .75); ctx.lineWidth = 1.4;
+  if (false && state.status === "playing" && hitConLines){ ctx.strokeStyle = hexA(CON_COLOR, .75); ctx.lineWidth = 1.4;
     OBJECTS.forEach(o => { if (o.con !== TARGET.con || !visible(o.lon,o.lat) || state.guesses.some(g => g.id === o.id)) return; const p = proj([o.lon,o.lat]); ctx.beginPath(); ctx.arc(p[0], p[1], 9, 0, 2*Math.PI); ctx.stroke(); }); }
   if (selected && visible(selected.lon, selected.lat)){ const p = proj([selected.lon, selected.lat]); ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.setLineDash([5,4]); ctx.beginPath(); ctx.arc(p[0],p[1], 15, 0, 2*Math.PI); ctx.stroke(); ctx.setLineDash([]);
     ctx.fillStyle = "#fff"; ctx.font = `700 13px "Bricolage Grotesque", system-ui, sans-serif`; ctx.textAlign = "left"; ctx.fillText(objName(selected), p[0] + 18, p[1] + 4); }
@@ -440,7 +453,53 @@ function beamFor(g, i){
   let poly = { type:"Polygon", coordinates:[ring] }; if (d3.geoArea(poly) > 2*Math.PI) poly = { type:"Polygon", coordinates:[ring.slice().reverse()] };
   return { poly, c, L, w, apex:[g.lon, g.lat], tip: dest([g.lon, g.lat], c, L), aim: dest([g.lon, g.lat], c, L*0.5) };
 }
+/* radar: ondas ata a distancia do calcetín; 270° con trazo e 90° de oco onde NON está */
+let radarT = 0;
+function radarFor(g, i){
+  const r = mulberry(RETO*977 + i*31 + 5), b = bearing([g.lon, g.lat], [TARGET.lon, TARGET.lat]);
+  const gapC = b + 180 + (2*r() - 1)*120; // o oco nunca toca a dirección real, pero non sempre está oposto
+  return { gap0: gapC - 45, gap1: gapC + 45, n: Math.max(1, Math.min(8, Math.ceil(g.d/12))) };
+}
+function arcCoords(c, rDeg, a0, a1, step){
+  const n = Math.max(2, Math.ceil(Math.abs(a1 - a0)/step)), out = [];
+  for (let k = 0; k <= n; k++) out.push(dest(c, a0 + (a1 - a0)*k/n, rDeg));
+  return out;
+}
+function drawRadar(){
+  if (state.status !== "playing" || !state.guesses.length) return;
+  const i = state.guesses.length - 1, g = state.guesses[i], R = radarFor(g, i), c = [g.lon, g.lat], ink = "#fff4c8";
+  const p = Math.min(1, (performance.now() - radarT)/1700), rMax = Math.max(0.8, Math.min(g.d, 178));
+  const shown = p >= 1 ? R.n : Math.max(1, Math.ceil(p*R.n));
+  for (let k = 1; k <= shown; k++){
+    const rr = rMax*k/R.n, outer = k === R.n;
+    ctx.lineWidth = outer ? 2.6 : 1.3; ctx.strokeStyle = hexA(ink, outer ? .9 : .18 + .4*k/R.n);
+    ctx.beginPath(); path({ type:"LineString", coordinates: arcCoords(c, rr, R.gap1, R.gap0 + 360, 3) }); ctx.stroke();
+    ctx.save(); ctx.setLineDash([2,7]); ctx.lineWidth = .8; ctx.strokeStyle = hexA(ink, .16);
+    ctx.beginPath(); path({ type:"LineString", coordinates: arcCoords(c, rr, R.gap0, R.gap1, 3) }); ctx.stroke(); ctx.restore();
+  }
+  if (p >= 1){ // eco que se apaga a ±15 %
+    [0.96, 1.04, 0.92, 1.08, 0.88, 1.12].forEach(f => { ctx.lineWidth = 4; ctx.strokeStyle = hexA(ink, .13*(1 - Math.abs(1 - f)/0.15));
+      ctx.beginPath(); path({ type:"LineString", coordinates: arcCoords(c, Math.min(178, rMax*f), R.gap1, R.gap0 + 360, 3) }); ctx.stroke(); });
+  } else redraw();
+}
+function nsOf(g){ const d = TARGET.lat - g.lat; return Math.abs(d) < 2 ? "eq" : d > 0 ? "n" : "s"; }
+function drawNS(){ // paralelo polo último intento e unha frecha cara ao norte ou ao sur
+  if (state.status !== "playing" || !state.guesses.length) return;
+  const g = state.guesses[state.guesses.length-1], ns = nsOf(g), sock = BASES[SOCK.base];
+  const par = []; for (let k = 0; k <= 360; k += 4) par.push([(g.lon + k) % 360, g.lat]);
+  ctx.save(); ctx.setLineDash([3,7]); ctx.lineWidth = 1.3; ctx.strokeStyle = "rgba(255,244,200,.45)"; ctx.beginPath(); path({ type:"LineString", coordinates:par }); ctx.stroke(); ctx.restore();
+  if (ns === "eq" || !visible(g.lon, g.lat)) return;
+  const brg = ns === "n" ? 0 : 180, a = proj([g.lon, g.lat]), tip = dest([g.lon, g.lat], brg, 6/Math.sqrt(K)), b = proj(tip);
+  if (!b || !visible(tip[0], tip[1])) return;
+  const dx = b[0]-a[0], dy = b[1]-a[1], L = Math.hypot(dx, dy) || 1, ux = dx/L, uy = dy/L, s0 = 20;
+  const x0 = a[0] + ux*s0, y0 = a[1] + uy*s0, x1 = a[0] + ux*Math.max(s0+26, L), y1 = a[1] + uy*Math.max(s0+26, L);
+  ctx.strokeStyle = "#fff4c8"; ctx.fillStyle = "#fff4c8"; ctx.lineWidth = 2.4; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x1 + ux*7, y1 + uy*7); ctx.lineTo(x1 - uy*6 - ux*3, y1 + ux*6 - uy*3); ctx.lineTo(x1 + uy*6 - ux*3, y1 - ux*6 - uy*3); ctx.closePath(); ctx.fill();
+  ctx.font = `700 11px "Bricolage Grotesque", system-ui, sans-serif`; ctx.textAlign = "center"; ctx.fillText(ns === "n" ? "N" : "S", x1 + ux*18, y1 + uy*18 + 4);
+}
 function drawBeams(){
+  if (CONFIG.HINT !== "beam") return;
   if (state.status !== "playing") return;
   const n = state.guesses.length; if (!n) return;
   const sock = BASES[SOCK.base];
@@ -498,8 +557,16 @@ function fitBeam(b){ const L = b.L*rad; return Math.max(0.8, Math.min(9, 0.42*Ma
 function focusLast(ms){ const n = state.guesses.length; if (!n) return; const g = state.guesses[n-1];
   if (inConNow() && CON_CENTER[TARGET.con] && guessCon(g) === TARGET.con){ const c = CON_CENTER[TARGET.con]; const ext = Math.max(4, ...OBJECTS.filter(o => o.con === TARGET.con).map(o => angDist([o.lon,o.lat], c)));
     flyTo(c[0], c[1], Math.max(0.8, Math.min(9, 0.4*Math.min(W, H) / (BASE*Math.sin(Math.min(ext*1.15, 70)*rad)))), ms); return; }
+  if (CONFIG.HINT === "ns"){ flyTo(g.lon, g.lat, K, ms); return; }
+  if (CONFIG.HINT === "radar"){ const r = Math.max(3, Math.min(g.d, 85)); flyTo(g.lon, g.lat, Math.max(0.55, Math.min(9, 0.42*Math.min(W, H)/(BASE*Math.sin(r*rad)))), ms); return; }
   const b = beamFor(g, n-1); flyTo(b.aim[0], b.aim[1], fitBeam(b), ms); }
 $("#focusBtn").onclick = () => focusLast(900);
+function coach(i){
+  const done = prefs.tut || 0; if (done > i || done >= 3 || state.status !== "playing") return;
+  prefs.tut = i; store.set("calcetin:v1:prefs", prefs);
+  $("#coachText").textContent = T().coach[i]; $("#coachOk").textContent = T().gotIt; $("#coach").hidden = false; $("#coach").dataset.i = i;
+}
+$("#coachOk").onclick = () => { prefs.tut = (+$("#coach").dataset.i || 0) + 1; store.set("calcetin:v1:prefs", prefs); $("#coach").hidden = true; };
 async function guess(ll, o){
   locked = true; if (!state.start){ state.start = Date.now(); startTimer(); }
   const wasIn = inConNow();
@@ -510,9 +577,12 @@ async function guess(ll, o){
   const g = { lon: +ll[0].toFixed(3), lat: +ll[1].toFixed(3), d: +d.toFixed(2), id: o ? o.id : null };
   state.guesses.push(g);
   const found = d <= CONFIG.WIN_DEG, L = lvl(g);
+  radarT = performance.now();
   ping(L); setReadout(g); setDelta(prev, d);
   const con = guessCon(g);
   if (!found && con === TARGET.con){ hitConLines = TARGET.con; if (!wasIn) toast(T().inCon(conName(TARGET.con)), 3200); }
+  if (found || state.guesses.length >= CONFIG.MAX_TRIES) $("#coach").hidden = true;
+  else if (con === TARGET.con || state.guesses.length >= 3) coach(2); else if (state.guesses.length >= 1) coach(1);
   else if (!found && NEIGH.has(con) && d < 35){ nearLines.add(con); }
   if (found){ state.status = "won"; state.end = Date.now(); }
   else if (state.guesses.length >= CONFIG.MAX_TRIES){ state.status = "lost"; state.end = Date.now(); }
@@ -523,12 +593,14 @@ async function guess(ll, o){
 }
 function setReadout(g){
   const el = $("#tuneName"), deg = $("#deg"), tag = $("#tag"), bars = $("#bars");
-  if (!g){ el.textContent = T().start; deg.textContent = ""; tag.textContent = ""; tag.hidden = true; bars.dataset.n = 0; bars.style.setProperty("--c", "var(--muted)"); return; }
+  if (!g){ el.textContent = T().start; deg.textContent = ""; tag.textContent = ""; tag.hidden = true; if ($("#nsTag")) $("#nsTag").hidden = true; bars.dataset.n = 0; bars.style.setProperty("--c", "var(--muted)"); return; }
   const L = lvl(g), found = L === 6;
   el.textContent = state.status === "lost" ? T().noTries : found ? T().found : L === 5 ? T().inConT : T().near[L];
   deg.textContent = found ? "" : fmtDeg(g.d);
   let t = ""; if (!found){ if (inConNow()) t = T().chip(conName(TARGET.con)); else if (NEIGH.has(guessCon(g)) && g.d < 35) t = T().nextCon; }
   tag.textContent = t; tag.hidden = !t; tag.classList.toggle("con", inConNow());
+  const nsEl = $("#nsTag"); if (nsEl){ const ns = found || state.status !== "playing" || CONFIG.HINT !== "ns" ? "" : nsOf(g);
+    nsEl.textContent = ns === "n" ? "⬆ " + T().nsN : ns === "s" ? "⬇ " + T().nsS : ns === "eq" ? "↔ " + T().nsEq : ""; nsEl.hidden = !ns; }
   bars.dataset.n = found || L === 5 ? 5 : L + 1; bars.style.setProperty("--c", lvlColor(g));
   bars.classList.toggle("glow", L >= 5);
 }
@@ -570,7 +642,15 @@ function drawMini(){
   // intentos e linterna
   const n = state.guesses.length;
   state.guesses.forEach((g, i) => { const p = miniXY(g.lon, g.lat); c.fillStyle = lvlColor(g); c.beginPath(); c.arc(p[0], p[1], i === n-1 ? 3 : 2.2, 0, 2*Math.PI); c.fill(); });
-  if (state.status === "playing" && n){ const g = state.guesses[n-1], b = beamFor(g, n-1), a = miniXY(...b.apex);
+  if (CONFIG.HINT === "radar" && state.status === "playing" && n){ const g = state.guesses[n-1], R = radarFor(g, n-1);
+    c.strokeStyle = hexA("#fff4c8", .9); c.lineWidth = 1.2; c.beginPath(); let prev = null;
+    arcCoords([g.lon, g.lat], Math.max(0.8, Math.min(g.d, 178)), R.gap1, R.gap0 + 360, 4).forEach(q => { const m = miniXY(q[0], q[1]);
+      if (!prev || Math.abs(m[0] - prev[0]) > MW_/2) c.moveTo(m[0], m[1]); else c.lineTo(m[0], m[1]); prev = m; });
+    c.stroke(); }
+  if (CONFIG.HINT === "ns" && state.status === "playing" && n){ const g = state.guesses[n-1], ns = nsOf(g), y = miniXY(g.lon, g.lat)[1], x = miniXY(g.lon, g.lat)[0];
+    c.save(); c.setLineDash([2,3]); c.strokeStyle = hexA("#fff4c8", .6); c.lineWidth = 1; c.beginPath(); c.moveTo(0, y); c.lineTo(MW_, y); c.stroke(); c.restore();
+    if (ns !== "eq"){ const dir = ns === "n" ? -1 : 1; c.fillStyle = "#fff4c8"; c.beginPath(); c.moveTo(x, y + dir*13); c.lineTo(x - 4, y + dir*6); c.lineTo(x + 4, y + dir*6); c.closePath(); c.fill(); } }
+  if (CONFIG.HINT === "beam" && state.status === "playing" && n){ const g = state.guesses[n-1], b = beamFor(g, n-1), a = miniXY(...b.apex);
     c.strokeStyle = hexA("#fff4c8", .9); c.lineWidth = 1.2; c.beginPath(); c.moveTo(a[0], a[1]);
     for (let k = 1; k <= 8; k++){ const p = miniXY(...dest(b.apex, b.c, b.L*k/8)); if (Math.abs(p[0]-a[0]) > MW_/2) break; c.lineTo(p[0], p[1]); } c.stroke(); }
   if (state.status !== "playing"){ const p = miniXY(TARGET.lon, TARGET.lat); c.fillStyle = BASES[SOCK.base]; c.strokeStyle = "#fff"; c.lineWidth = 1; c.beginPath(); c.arc(p[0], p[1], 3.5, 0, 2*Math.PI); c.fill(); c.stroke(); }
@@ -586,7 +666,7 @@ function stopTimer(){ clearInterval(timerId); timerId = null; tick(); }
 function bestScore(){ return state.guesses.length ? Math.max(...state.guesses.map(g => tuneScore(g.d))) : 0; }
 function points(){
   if (!state.guesses.length) return 0;
-  if (state.status === "won"){ const spare = CONFIG.MAX_TRIES - state.guesses.length, s = elapsed()/1000; return 600 + 40*spare + Math.round(40*Math.max(0, Math.min(1, (300 - s)/240))); }
+  if (state.status === "won"){ const spare = CONFIG.MAX_TRIES - state.guesses.length, s = elapsed()/1000; return 600 + 50*spare + Math.round(50*Math.max(0, Math.min(1, (300 - s)/240))); }
   return 5 * Math.min(99, Math.round(100 * bestScore()));
 }
 
@@ -615,24 +695,29 @@ function renderEnd(){
       <div><b>${won ? state.guesses.length : "–"}/${CONFIG.MAX_TRIES}</b><span>${T().tries}</span></div>
       <div><b>${fmtTime(elapsed())}</b><span>${T().time}</span></div>
     </div>
-    <div class="actions"><button class="btn primary" id="cardBtn">${T().card}</button><button class="btn" id="shareBtn">${T().share}</button></div>
+    ${TRAIN ? `<div class="actions"><button class="btn primary" id="againBtn">${T().another}</button><button class="btn" id="cardBtn">${T().card}</button></div>
+    <div class="actions"><button class="btn" id="exploreBtn">${T().explore}</button></div>` :
+    `<div class="actions"><button class="btn primary" id="cardBtn">${T().card}</button><button class="btn" id="shareBtn">${T().share}</button></div>
     <div class="actions"><button class="btn" id="drawerBtn2">${T().drawer}</button><button class="btn" id="exploreBtn">${T().explore}</button></div>
-    ${SRV ? `<div class="actions"><button class="btn" id="rankBtn2">${T().rankBtn}</button></div>` : ""}
+    ${SRV ? `<div class="actions"><button class="btn" id="rankBtn2">${T().rankBtn}</button></div>` : ""}`}
     <p class="next-in" id="nextIn"></p>`;
   $("#end").hidden = false; $("#sheet").classList.remove("collapsed");
   $("#cardBtn").onclick = () => openCard(TARGET);
-  $("#shareBtn").onclick = share;
-  $("#drawerBtn2").onclick = openDrawer; if (SRV) $("#rankBtn2").onclick = openRank;
+  if (TRAIN) $("#againBtn").onclick = newTrain;
+  else { $("#shareBtn").onclick = share; $("#drawerBtn2").onclick = openDrawer; if (SRV) $("#rankBtn2").onclick = openRank; }
   $("#exploreBtn").onclick = () => { $("#sheet").classList.add("collapsed"); redraw(); };
   renderDelta(); nextCountdown();
 }
-function nextCountdown(){ const el = $("#nextIn"); if (!el) return; const n = new Date(), mid = new Date(n.getFullYear(), n.getMonth(), n.getDate()+1); el.textContent = T().nextIn(fmtTime(mid - n)); }
+function launchLeft(){ const ms = CONFIG.EPOCH - new Date(); if (ms <= 0) return ""; const d = Math.floor(ms/86400000); return T().launchIn((d ? T().days(d) + " · " : "") + fmtTime(ms % 86400000)); }
+function newTrain(){ store.del(KEY); store.set(TRAIN_SEED_KEY, 100000 + Math.floor(Math.random()*900000)); location.href = location.pathname + (PRELAUNCH ? "" : "?entrenar"); }
+function nextCountdown(){ const el = $("#nextIn"), lc = $("#launchCount"); if (lc) lc.textContent = launchLeft(); if (!el) return;
+  if (TRAIN){ el.textContent = PRELAUNCH ? launchLeft() : ""; return; } const n = new Date(), mid = new Date(n.getFullYear(), n.getMonth(), n.getDate()+1); el.textContent = T().nextIn(fmtTime(mid - n)); }
 setInterval(nextCountdown, 1000);
 const SHARE_SQ = ["⬛","🟪","🟦","🟩","🟨","🟧","🧦"];
 function shareText(){
   const won = state.status === "won";
   const row = state.guesses.map(g => SHARE_SQ[lvl(g)]).join("");
-  return `${won ? T().shareWon(RETO, state.guesses.length, CONFIG.MAX_TRIES, points()) : T().shareLost(RETO, CONFIG.MAX_TRIES, points())}\n${row}\n${sockName(SOCK)}`;
+  return `${won ? T().shareWon(RETO, state.guesses.length, CONFIG.MAX_TRIES, points()) : T().shareLost(RETO, CONFIG.MAX_TRIES, points())}\n${row}\n${sockName(SOCK)}${SRV ? "\n" + location.origin : ""}`;
 }
 async function share(){ const text = shareText();
   if (navigator.share){ try { await navigator.share({ text }); return; } catch(e){ if (e && e.name === "AbortError") return; } }
@@ -644,7 +729,7 @@ function getStats(){ return store.get(STATS_KEY, { hist: {} }); }
 function countStats(){ if (state.counted || TESTING) return; const s = getStats();
   s.hist[RETO] = { f: state.status === "won" ? 1 : 0, t: state.guesses.length, p: points(), id: TARGET.id }; store.set(STATS_KEY, s); state.counted = true; save(); submitResult(RETO); }
 function openDrawer(){
-  const s = getStats(), last = Math.max(TODAY, RETO), first = Math.min(0, ...Object.keys(s.hist).map(Number));
+  const s = getStats(), last = Math.max(TODAY, TRAIN ? 0 : RETO), first = Math.min(1, ...Object.keys(s.hist).map(Number).filter(n => n >= 1));
   let html = "", found = 0, total = 0;
   for (let n = last; n >= first; n--){
     const h = s.hist[n], sk = sockFor(n), tgt = targetFor(n); total++;
@@ -655,7 +740,7 @@ function openDrawer(){
       <span class="dsock">${!h ? sockSVG(sk, { empty: true }) : sockSVG(sk, { ghost: !h.f })}</span>
       <span class="dnum">${T().num} ${n}</span><span class="dcap">${esc(cap)}</span></button>`;
   }
-  $("#drawerCount").textContent = T().dCount(found, total);
+  $("#drawerCount").textContent = last < 1 ? T().dEmpty : T().dCount(found, total);
   $("#drawerGrid").innerHTML = html;
   $("#drawerGrid").querySelectorAll(".dcell").forEach(b => b.onclick = () => { const n = +b.dataset.n, h = s.hist[n];
     if (h) openCard(targetFor(n)); });
@@ -743,20 +828,22 @@ $("#testNum").value = RETO;
 $("#testGo").onclick = () => { const n = parseInt($("#testNum").value, 10); if (n >= 0){ store.set(TEST_KEY, n); store.del(`calcetin:v1:reto:${n}`); location.reload(); } };
 $("#testRand").onclick = () => { const n = 1 + Math.floor(Math.random()*(SRV ? Math.max(1, TODAY) : ORDER.length)); store.set(TEST_KEY, n); store.del(`calcetin:v1:reto:${n}`); location.reload(); };
 $("#resetBtn").onclick = () => { store.del(KEY); location.reload(); };
-$("#testToday").onclick = () => { store.del(TEST_KEY); location.reload(); };
+$("#testToday").onclick = () => { store.del(TEST_KEY); location.href = location.pathname; };
+$("#trainGo").onclick = () => newTrain();
+$("#launchGo").onclick = () => $("#launchDlg").close();
 function closeLang(){ $("#langMenu").hidden = true; }
 $("#langBtn").onclick = e => { e.stopPropagation(); $("#langMenu").hidden = !$("#langMenu").hidden; };
 document.addEventListener("click", e => { if (!e.target.closest(".langwrap")) closeLang(); });
 function applyLang(){
   document.documentElement.lang = LANG;
   document.querySelectorAll("[data-i18n]").forEach(el => { const k = el.dataset.i18n; let v = T()[k]; if (k === "help1") v = T().help1(CONFIG.MAX_TRIES); el.innerHTML = v; });
-  $("#retoNum").textContent = `${T().num} ${RETO}`; $("#testBadge").hidden = !TESTING; $("#testBadge").textContent = T().test;
+  $("#retoNum").textContent = TRAIN ? T().train : `${T().num} ${RETO}`; $("#testBadge").hidden = !TESTING || TRAIN; $("#testBadge").textContent = T().test;
   $("#brandSock").innerHTML = sockSVG(SOCK); $("#brandSock").title = sockName(SOCK);
   $("#langFlag").innerHTML = FLAGS[LANG];
   $("#langMenu").innerHTML = LANGS.map(l => `<button data-lang="${l}" class="${l === LANG ? "on" : ""}"><span class="flag">${FLAGS[l]}</span>${LANG_NAMES[l]}</button>`).join("");
   $("#langMenu").querySelectorAll("button").forEach(b => b.onclick = () => { LANG = b.dataset.lang; prefs.lang = LANG; store.set("calcetin:v1:prefs", prefs); closeLang(); applyLang(); });
-  $("#introSock").innerHTML = sockSVG(SOCK); $("#introName").textContent = sockName(SOCK);
-  const last = state.guesses[state.guesses.length-1]; setReadout(last || null); renderDelta(); renderPips(); renderEnd(); if (selected) select(selected); $("#focusBtn").title = T().focus; $("#focusBtn").setAttribute("aria-label", T().focus); $("#rankBtn").title = T().rankTitle; if ($("#rankDlg").open){ $("#nameIn").placeholder = T().namePh; renderRankTabs(); loadRank(); } redraw();
+  $("#introSock").innerHTML = sockSVG(SOCK); $("#launchSock").innerHTML = sockSVG(SOCK); $("#introName").textContent = sockName(SOCK);
+  const last = state.guesses[state.guesses.length-1]; setReadout(last || null); renderDelta(); renderPips(); renderEnd(); if (selected) select(selected); $("#focusBtn").title = T().focus; $("#focusBtn").setAttribute("aria-label", T().focus); $("#rankBtn").title = T().rankTitle; if (!$("#coach").hidden) $("#coachText").textContent = T().coach[+$("#coach").dataset.i || 0]; $("#coachOk").textContent = T().gotIt; nextCountdown(); if ($("#rankDlg").open){ $("#nameIn").placeholder = T().namePh; renderRankTabs(); loadRank(); } redraw();
 }
 
 /* ================= CLASIFICACIÓN (só na versión instalada) ================= */
@@ -835,6 +922,10 @@ if (state.guesses.length){ const last = state.guesses[state.guesses.length-1], p
 else setDelta(null, null);
 applyLang();
 if (state.status !== "playing"){ countStats(); reveal(false); }
+else if (PRELAUNCH && TRAIN && !sessionStorage.getItem("cal_launch_seen")){ setTimeout(() => { $("#launchDlg").showModal(); try { sessionStorage.setItem("cal_launch_seen", "1"); } catch(e){} }, 350); }
 else if (!state.guesses.length) setTimeout(() => $("#introDlg").showModal(), 350);
+if (state.status === "playing"){ const n = state.guesses.length; coach(n === 0 ? 0 : n < 3 ? 1 : 2); }
+$("#introDlg").addEventListener("close", () => { if (!state.guesses.length) coach(0); });
+$("#launchDlg").addEventListener("close", () => { if (!state.guesses.length) coach(0); });
 if (document.fonts) document.fonts.ready.then(redraw);
 };

@@ -4,8 +4,9 @@ const crypto = require("crypto");
 const { STARS_RAW, DSO_RAW } = require("../data.js");
 
 /* ---------- Configuración do xogo (igual que no navegador) ---------- */
-const MAX_TRIES = 10, WIN_DEG = 0.6;
-const EPOCH_UTC = Date.UTC(2026, 9, 1); // reto nº 1 = 01/10/2026
+const MAX_TRIES = 8, WIN_DEG = 0.6;
+const EPOCH_UTC = Date.UTC(2026, 9, 10); // reto nº 1 = 10/10/2026 (estrea)
+const EPOCH_TAG = "2026-10-10";
 const PINNED = ["Betelgeuse","Polaris","M31","Sirius","Antares","Vega","M45","Proxima Centauri","Deneb","SGRA"];
 
 /* ---------- Catálogo ---------- */
@@ -61,7 +62,14 @@ async function init(){
   if (!ready) ready = (async () => {
     await q(SCHEMA);
     await q("insert into cal_config (k, v) values ('seed', $1) on conflict (k) do nothing", [crypto.randomBytes(4).toString("hex")]);
-    await q("insert into cal_config (k, v) values ('ptr', '0'), ('upto', '-1') on conflict (k) do nothing");
+    await q("insert into cal_config (k, v) values ('ptr', '0'), ('upto', '0') on conflict (k) do nothing");
+    // se cambia a data do reto nº 1, a orde e as partidas anteriores xa non valen: empézase de cero
+    const e = await q("select v from cal_config where k = 'epoch'");
+    if (!e.rows.length || e.rows[0].v !== EPOCH_TAG){
+      await q("delete from cal_results"); await q("delete from cal_orde");
+      await q("update cal_config set v = '0' where k in ('ptr', 'upto')");
+      await q("insert into cal_config (k, v) values ('epoch', $1) on conflict (k) do update set v = excluded.v", [EPOCH_TAG]);
+    }
   })().catch(e => { ready = null; throw e; });
   return ready;
 }
@@ -103,6 +111,7 @@ async function loadOrde(client, from, to){
 }
 async function materialize(today){
   await init();
+  if (today < 1) return; // antes da estrea non hai retos
   const cfg0 = await getConfig();
   if (+cfg0.upto >= today) return;
   const client = await db().connect();
@@ -131,11 +140,11 @@ async function preview(today, days){
     const cfg = await getConfig(client), base = baseSequence(cfg.seed);
     const off = new Set((await client.query("select astro from cal_off")).rows.map(x => x.astro));
     const { map, rows } = await loadOrde(client, Math.max(0, today - 60), today + days);
-    const { out } = plan(base, +cfg.ptr, today, today + days, map, off);
+    const { out } = plan(base, +cfg.ptr, Math.max(today, +cfg.upto), today + days, map, off);
     const manual = new Set(rows.filter(x => x.manual).map(x => +x.n));
     const list = [];
-    for (let d = Math.max(0, today - 7); d <= today + days; d++){
-      const astro = d <= today ? map[d] : out[d].astro;
+    for (let d = Math.max(1, today - 7); d <= today + days; d++){
+      const astro = d <= today ? map[d] : (out[d] || {}).astro;
       list.push({ n: d, astro, manual: manual.has(d), past: d < today, today: d === today });
     }
     return list;
@@ -153,7 +162,7 @@ function scoreGame(targetId, guesses, secs){
     if (d <= WIN_DEG){ found = true; break; }
   }
   const score = found
-    ? 600 + 40*(MAX_TRIES - tries) + Math.round(40*Math.max(0, Math.min(1, (300 - secs)/240)))
+    ? 600 + 50*(MAX_TRIES - tries) + Math.round(50*Math.max(0, Math.min(1, (300 - secs)/240)))
     : 5 * Math.min(99, Math.round(100 * best));
   return { found, tries, score };
 }

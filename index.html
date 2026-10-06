@@ -3,6 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Cada noite pérdese un calcetín desparellado entre as estrelas. Atópao en 8 intentos!">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Calcetín · un reto diario entre as estrelas">
+<meta property="og:description" content="Cada noite pérdese un calcetín desparellado entre as estrelas. Atópao en 8 intentos!">
+<meta property="og:image" content="https://calcetin.vercel.app/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#120f38">
 <title>Calcetín</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -64,7 +75,10 @@ button{font:inherit;color:inherit}
 #bars i{height:8px;border-radius:5px;background:var(--line);transition:background .5s,box-shadow .5s}
 #bars[data-n="1"] i:nth-child(-n+1),#bars[data-n="2"] i:nth-child(-n+2),#bars[data-n="3"] i:nth-child(-n+3),#bars[data-n="4"] i:nth-child(-n+4),#bars[data-n="5"] i{background:var(--c)}
 #bars.glow i{box-shadow:0 0 12px var(--c)}
-#tag{display:inline-block;margin-top:6px;padding:4px 10px;border-radius:999px;font-size:14px;font-weight:600;background:var(--glass)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+#nsTag{display:inline-block;padding:4px 10px;border-radius:999px;font-size:14px;font-weight:600;background:#fff4c8;color:#2a2140}
+#nsTag[hidden]{display:none}
+#tag{display:inline-block;margin-top:0;padding:4px 10px;border-radius:999px;font-size:14px;font-weight:600;background:var(--glass)}
 #tag.con{background:#ff9f5a;color:#2a1405}
 #tag[hidden]{display:none}
 /* selección */
@@ -152,6 +166,12 @@ label.toggle{display:flex;align-items:center;gap:8px;font-size:15px;margin:10px 
 :focus-visible{outline:2px solid var(--sock-acc);outline-offset:2px}
 @media (max-width:460px){.top{gap:6px;padding:0 8px}.topleft,.topright{gap:6px}.round{width:38px;height:38px}.brand{padding:5px 10px 5px 6px;gap:6px}.brand b{font-size:15px}.brand span{font-size:12.5px}.brand .bs{width:24px;height:28px}}
 @media (max-width:380px){.round{width:36px;height:36px}.brand b{font-size:14px}}
+/* guía */
+#coach{display:flex;align-items:center;gap:10px;margin:2px 0 10px;padding:10px 10px 10px 14px;border-radius:16px;background:#fff4c8;color:#2a2140;font-size:15px;line-height:1.35;font-weight:500;animation:coachIn .35s ease}
+#coach[hidden]{display:none}
+#coach span{flex:1}
+#coach .btn{flex:none;padding:8px 12px;font-size:14px;background:rgba(42,33,64,.12);color:#2a2140}
+@keyframes coachIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 /* clasificación */
 #rankBtn[hidden]{display:none}
 .tabs{display:flex;gap:4px;padding:4px;border-radius:14px;background:var(--glass);margin:4px 0 14px;overflow-x:auto}
@@ -195,9 +215,10 @@ ol.rank b{font-variant-numeric:tabular-nums}
   <div id="toast" role="status"></div>
   <section id="sheet" aria-live="polite">
     <button class="handle" id="handle" aria-label="Panel"></button>
+    <div id="coach" hidden><span id="coachText"></span><button class="btn" id="coachOk"></button></div>
     <div id="pick" hidden><div><b id="pickName"></b><span id="pickSub"></span></div><button class="btn primary" id="pickGo"></button></div>
     <div class="readout"><div class="tn"><span id="tuneName"></span><span id="deg"></span></div><div id="delta"></div></div>
-    <div id="tag" hidden></div>
+    <div class="chips"><span id="nsTag" hidden></span><span id="tag" hidden></span></div>
     <div id="bars" data-n="0"><i></i><i></i><i></i><i></i><i></i></div>
     <div class="meta"><div class="pips" id="pips"></div><div id="left"></div><div id="timer">0:00</div></div>
     <div id="end" hidden></div>
@@ -212,6 +233,14 @@ ol.rank b{font-variant-numeric:tabular-nums}
   <button class="btn primary" data-close style="width:100%" data-i18n="start"></button>
 </dialog>
 
+<dialog id="launchDlg" class="intro">
+  <div class="isock" id="launchSock"></div>
+  <h3 data-i18n="launchTitle"></h3>
+  <p class="iname" id="launchCount"></p>
+  <p data-i18n="launchText"></p>
+  <button class="btn primary" id="launchGo" style="width:100%" data-i18n="trainBtn"></button>
+</dialog>
+
 <dialog id="helpDlg">
   <button class="close" data-close>×</button>
   <h3 data-i18n="howTitle"></h3>
@@ -222,7 +251,7 @@ ol.rank b{font-variant-numeric:tabular-nums}
     <p class="small" style="margin:0 0 8px" data-i18n="testTitle"></p>
     <div class="testrow"><label for="testNum" class="small" data-i18n="retoLabel"></label><input id="testNum" type="number" min="0" inputmode="numeric">
       <button class="btn" id="testGo" data-i18n="play"></button><button class="btn" id="testRand" data-i18n="random"></button></div>
-    <div class="testrow"><button class="btn" id="resetBtn" data-i18n="reset"></button><button class="btn" id="testToday" data-i18n="today"></button></div>
+    <div class="testrow"><button class="btn" id="trainGo" data-i18n="trainBtn"></button><button class="btn" id="resetBtn" data-i18n="reset"></button><button class="btn" id="testToday" data-i18n="today"></button></div>
   </div>
 </dialog>
 

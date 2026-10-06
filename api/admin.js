@@ -15,7 +15,7 @@ module.exports = L.handler(async (req, res) => {
     }
     case "fixar": { // escoller o astro dun día futuro
       const n = parseInt(b.n, 10);
-      if (!(n > today) || !L.CAT[b.astro]) return L.send(res, 400, { error: "datos" });
+      if (!(n > today && n >= 1) || !L.CAT[b.astro]) return L.send(res, 400, { error: "datos" });
       await L.q("insert into cal_orde (n, astro, manual) values ($1, $2, true) on conflict (n) do update set astro = excluded.astro, manual = true", [n, b.astro]);
       return L.send(res, 200, { ok: true });
     }
