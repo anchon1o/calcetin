@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="gl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Calcetín · Clasificación</title>
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sky:#120f38; --ink:#F1EDFF; --muted:#A9A3D6; --line:rgba(200,190,255,.16); --glass:rgba(200,190,255,.09);
+  --cream:#fff4c8; --pink:#FF5C8A; --teal:#35C2A8;
+  --font:"Bricolage Grotesque", ui-rounded, "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:radial-gradient(ellipse at 50% 0%,#2b2470 0%,#151046 55%,#0b0927 100%);color:var(--ink);font-family:var(--font);
+  -webkit-font-smoothing:antialiased;display:flex;flex-direction:column;overflow:hidden;min-width:280px}
+header{flex:none;padding:12px 14px 8px;display:flex;align-items:center;gap:10px}
+header svg{width:30px;height:36px;flex:none;transform:rotate(-12deg)}
+header h1{margin:0;font-size:20px;line-height:1.1;font-weight:800;letter-spacing:-.3px}
+header h1 small{display:block;font-size:13px;font-weight:500;color:var(--muted);letter-spacing:0}
+.tabs{flex:none;display:flex;gap:4px;margin:0 12px 8px;padding:4px;border-radius:14px;background:var(--glass)}
+.tabs button{flex:1;min-width:0;border:0;background:none;color:var(--muted);font:inherit;font-size:14px;font-weight:700;padding:8px 4px;border-radius:10px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tabs button.on{background:var(--pink);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.3)}
+.note{flex:none;margin:0 16px 6px;font-size:12.5px;color:var(--muted);min-height:16px}
+main{flex:1;min-height:0;overflow-y:auto;padding:0 12px 6px;-webkit-overflow-scrolling:touch}
+ol{list-style:none;margin:0;padding:0}
+li{display:flex;align-items:center;gap:10px;padding:9px 8px;border-bottom:1px solid var(--line);font-size:15.5px}
+li:last-child{border-bottom:0}
+.pos{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:13.5px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
+li.p1 .pos{background:#F5C542;color:#3a2a00}
+li.p2 .pos{background:#D3D6E4;color:#2a2c3a}
+li.p3 .pos{background:#D0915A;color:#3a1e08}
+.nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.dy{flex:none;font-size:12px;color:var(--muted)}
+.sc{flex:none;font-weight:800;font-variant-numeric:tabular-nums;color:var(--cream)}
+.empty{text-align:center;padding:26px 14px;color:var(--muted);font-size:15px;line-height:1.45}
+.empty b{display:block;font-size:34px;margin-bottom:6px}
+footer{flex:none;padding:8px 12px 12px;display:flex;justify-content:center}
+footer a{display:inline-block;text-decoration:none;font-weight:800;font-size:15px;color:#fff;background:var(--teal);padding:9px 18px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+footer a:active{transform:translateY(1px)}
+.sk{height:44px;border-radius:10px;margin:6px 0;background:linear-gradient(90deg,var(--glass),rgba(200,190,255,.16),var(--glass));background-size:200% 100%;animation:sh 1.2s linear infinite}
+@keyframes sh{to{background-position:-200% 0}}
+@media (max-width:360px){header h1{font-size:18px}.tabs button{font-size:13px}li{font-size:14.5px;gap:8px}.dy{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <svg viewBox="0 0 124 146" aria-hidden="true"><path d="M34 6 Q34 2 38 2 H70 Q74 2 74 6 L74 80 L106 106 Q121 118 112 132 Q103 145 86 138 L42 119 Q26 111 28 92 L34 70 Z" fill="#FF5C8A" stroke="#120f38" stroke-width="5" stroke-linejoin="round"/><path d="M96 102 L112 114 Q121 122 112 132 Q103 145 86 138 L82 136 Z" fill="#35C2A8"/><rect x="34" y="14" width="40" height="7" fill="#fff4c8"/></svg>
+  <h1>Calcetín<small id="sub"></small></h1>
+</header>
+<nav class="tabs" id="tabs"></nav>
+<p class="note" id="note"></p>
+<main id="list"></main>
+<footer><a id="play" target="_top" rel="noopener"></a></footer>
+
+<script>
+"use strict";
+const TXT = {
+  gl: { sub:"Clasificación", tabs:["Hoxe","Semana","Mes","Sempre"], week:"Suma dos 5 mellores días dos últimos 7", month:"Suma de todos os días deste mes", ever:"Suma de todos os días",
+        today:"Reto de hoxe", empty:"Aínda non xogou ninguén con nome. Sé a primeira persoa!", pre:"Os retos comezan o 10 de outubro. Mentres, podes adestrar!", err:"Non se puido cargar a clasificación.", days:n=>n===1?"1 día":`${n} días`, play:"Xogar ao Calcetín →" },
+  es: { sub:"Clasificación", tabs:["Hoy","Semana","Mes","Siempre"], week:"Suma de los 5 mejores días de los últimos 7", month:"Suma de todos los días de este mes", ever:"Suma de todos los días",
+        today:"Reto de hoy", empty:"Todavía no ha jugado nadie con nombre. ¡Sé la primera persona!", pre:"Los retos empiezan el 10 de octubre. Mientras, ¡puedes entrenar!", err:"No se pudo cargar la clasificación.", days:n=>n===1?"1 día":`${n} días`, play:"Jugar a Calcetín →" },
+  ca: { sub:"Classificació", tabs:["Avui","Setmana","Mes","Sempre"], week:"Suma dels 5 millors dies dels últims 7", month:"Suma de tots els dies d'aquest mes", ever:"Suma de tots els dies",
+        today:"Repte d'avui", empty:"Encara no hi ha jugat ningú amb nom. Sigues la primera persona!", pre:"Els reptes comencen el 10 d'octubre. Mentrestant, pots entrenar!", err:"No s'ha pogut carregar la classificació.", days:n=>n===1?"1 dia":`${n} dies`, play:"Juga a Calcetín →" },
+  eu: { sub:"Sailkapena", tabs:["Gaur","Astea","Hilabetea","Beti"], week:"Azken 7 egunetako 5 egun onenen batura", month:"Hilabete honetako egun guztien batura", ever:"Egun guztien batura",
+        today:"Gaurko erronka", empty:"Oraindik ez du inork jokatu izenarekin. Izan zaitez lehena!", pre:"Erronkak urriaren 10ean hasiko dira. Bitartean, entrenatu dezakezu!", err:"Ezin izan da sailkapena kargatu.", days:n=>n===1?"egun 1":`${n} egun`, play:"Jokatu Calcetín-era →" }
+};
+const TABS = ["hoxe","semana","mes","sempre"];
+const ALIAS = { hoxe:"hoxe", hoy:"hoxe", avui:"hoxe", gaur:"hoxe", today:"hoxe", dia:"hoxe",
+  semana:"semana", setmana:"semana", astea:"semana", week:"semana",
+  mes:"mes", hilabetea:"mes", month:"mes",
+  sempre:"sempre", siempre:"sempre", beti:"sempre", always:"sempre", total:"sempre", todo:"sempre" };
+const qs = new URLSearchParams(location.search);
+const LANG = TXT[(qs.get("lang") || "gl").toLowerCase()] ? (qs.get("lang") || "gl").toLowerCase() : "gl";
+const T = TXT[LANG];
+const N = Math.max(1, Math.min(100, parseInt(qs.get("n"), 10) || 10));
+let tab = ALIAS[(qs.get("p") || "").toLowerCase()] || "hoxe";
+// "v" (variante) non se usa: Calcetín ten un único reto diario
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const num = n => Number(n).toLocaleString({ gl:"gl-ES", es:"es-ES", ca:"ca-ES", eu:"eu-ES" }[LANG]);
+document.documentElement.lang = LANG;
+$("#sub").textContent = T.sub;
+$("#play").textContent = T.play;
+$("#play").href = new URL("./", location.href).href;
+
+function renderTabs(){
+  $("#tabs").innerHTML = TABS.map((k, i) => `<button type="button" data-k="${k}" class="${k === tab ? "on" : ""}">${T.tabs[i]}</button>`).join("");
+  $("#tabs").querySelectorAll("button").forEach(b => b.onclick = () => { if (tab !== b.dataset.k){ tab = b.dataset.k; renderTabs(); load(); } });
+}
+let seq = 0;
+async function load(){
+  const my = ++seq;
+  $("#note").textContent = { hoxe:T.today, semana:T.week, mes:T.month, sempre:T.ever }[tab];
+  $("#list").innerHTML = Array.from({ length: Math.min(N, 5) }, () => `<div class="sk"></div>`).join("");
+  try {
+    const r = await fetch(`api/ranking?t=${tab}&n=${N}`, { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    const j = await r.json(); if (my !== seq) return;
+    if (!j.rows || !j.rows.length){
+      $("#list").innerHTML = `<div class="empty"><b>🧦</b>${j.today < 1 ? T.pre : T.empty}</div>`; return;
+    }
+    const showDays = tab !== "hoxe";
+    $("#list").innerHTML = `<ol>${j.rows.slice(0, N).map(x => `<li class="p${x.pos}"><span class="pos">${x.pos}</span><span class="nm">${esc(x.name)}</span>${showDays ? `<span class="dy">${T.days(x.days)}</span>` : ""}<span class="sc">${num(x.score)}</span></li>`).join("")}</ol>`;
+  } catch(e){
+    if (my === seq) $("#list").innerHTML = `<div class="empty"><b>☁️</b>${T.err}</div>`;
+  }
+}
+renderTabs(); load();
+// actualízase só cada 2 minutos mentres está visible
+setInterval(() => { if (!document.hidden) load(); }, 120000);
+</script>
+</body>
+</html>
